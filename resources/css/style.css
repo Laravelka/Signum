@@ -1,0 +1,23 @@
+
+a {text-decoration: none!important;}
+
+.vis-major {
+	display: none  !important;
+}
+
+.vis-grid.vis-vertical.vis-major {
+	display: block  !important;
+}
+
+.vis-text {
+	color: white !important;
+}
+
+.vis-custom-time.custome-type-center {
+	color: red  !important;
+}
+
+.vis-item.vis-background {
+	background-color: aqua;
+}
+
