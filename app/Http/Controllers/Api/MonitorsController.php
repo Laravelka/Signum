@@ -25,7 +25,9 @@ class MonitorsController extends Controller
 			$url = $this->server.'/'.$user->shinobi_token.'/monitor/'.$user->shinobi_ke;
 			
 			$response = $client->request('GET', $url, [
-				'headers' => ['Content-Length' => 1]
+				'timeout' => 3,
+				'headers' => ['Content-Length' => 1],
+				'connect_timeout' => 3.14
 			]);
 			$json = json_decode($response->getBody()->getContents(), true);
 
@@ -57,7 +59,9 @@ class MonitorsController extends Controller
 			$url = $this->server.'/'.$user->shinobi_token.'/monitor/'.$user->shinobi_ke.'/'.$request->input('id');
 			
 			$response = $client->request('GET', $url, [
-				'headers' => ['Content-Length' => 1]
+				'timeout' => 3,
+				'headers' => ['Content-Length' => 1],
+				'connect_timeout' => 3.14
 			]);
 			$json = json_decode($response->getBody()->getContents(), true);
 			$json['server'] = $this->server;

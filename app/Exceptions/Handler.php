@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Exception;
+use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 
 class Handler extends ExceptionHandler
@@ -46,6 +47,9 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+		if ($exception instanceof GuzzleRequestException) {
+			return response()->json(['error' => true, 'message' => 'Сервер временно не отвечает.'], 500);
+		}
         return parent::render($request, $exception);
     }
 }

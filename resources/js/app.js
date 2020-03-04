@@ -20,24 +20,25 @@ Vue.component('timeline', timeline);
 
 //import timeline from '@/components/Timeline.js';
 
-axios.defaults.baseURL =  'http://185.231.245.101/api';
+axios.defaults.baseURL =  'http://84.39.252.80/api';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Authorization'] = 'Bearer ' + getCookie('default_auth_token');
 
 axios.interceptors.response.use((response) => {
 	let headers = response.headers;
 	
+	console.log('RESPONSE: ', response);
+	
 	return response;
 });
 
 window.axios = axios;
-
 Vue.use(Vuetify);
-
 Vue.router = Routes;
 
 Vue.use(require('@websanova/vue-auth'), {
-	fetchData: { enabled: false},
+	fecthData: { enabled: false },
+	refreshData: { enabled: false },
 	logoutData: { redirect: '/login' },
 	auth: require('@websanova/vue-auth/drivers/auth/bearer.js'),
 	http: require('@websanova/vue-auth/drivers/http/axios.1.x.js'),

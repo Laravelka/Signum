@@ -72,8 +72,9 @@
 							:src="videoSrc"
 							v-on:loadeddata="loadedData"
 							v-on:error="videoError"
-							v-on:canplay="log('video can play')"
-							v-on:play="log('video start play')"
+							v-on:play="onVideoPlay"
+							v-on:pause="onVideoPause"
+							v-on:abort="onVideoAbort"
 						></video>
 					</div>
 					<v-card-title>
@@ -229,8 +230,8 @@
 			},
 			timelineParams: {
 				range: {
-					min: moment().subtract(1, 'week'), // максимум на 1 неделю назад
-					max: moment().add(1, 'week'),
+					min: moment().subtract(1, 'day'),
+					max: moment().add(1, 'day'),
 				},
 				downloadeditem: null, 
 				// center: moment().format(moment.HTML5_FMT.DATETIME_LOCAL_SECONDS),
@@ -271,7 +272,7 @@
 				console.error('Ошибка получения камеры: ', error);
 			});
 
-			this.changeVideoDateThottled = _.throttle(this.changeVideoDate, 500); // Ограничиеваем вызов раз в 500 мс
+			this.changeVideoDateThottled = _.debounce(this.changeVideoDate, 500); // Ограничиеваем вызов раз в 500 мс
 
 		},
 		mounted() {
@@ -315,6 +316,29 @@
 				this.isPreload = false; 
 				this.vidError = true;
 			},
+
+			onVideoPlay(event) {
+				console.error(event);
+				
+				if (this.$refs['timeline']) {
+					this.$refs['timeline'].play();
+				}
+			},
+			onVideoPause(event) {
+				console.error(event);
+				
+				if (this.$refs['timeline']) {
+					this.$refs['timeline'].stop();
+				}
+			},
+			onVideoAbort(event) {
+				console.error(event);
+				
+				if (this.$refs['timeline']) {
+					this.$refs['timeline'].stop();
+				}
+			},
+
 			playStream() {
 				this.videoSrc = this.monitor.server + this.monitor.streams[0];
 				this.isStream = true;
@@ -419,17 +443,32 @@
 					else 
 					{
 						app.archive.data = videos;
-						app.videoSrc = response.data.server + videos[0].href;
-
 						app.isStream = true;
 						app.isPreload = false;
 
+						var startTime = moment(videos[videos.length - 1].time).utcOffset(0, true);
+						var currentTime = moment(date).utcOffset(0, true);
 
-						var startTime = moment(videos[0].time);
-						var currentTime = moment(date);
+						var match = response.data.server.match(/^(https?)?:\/\/([^:\/\\]+(?::\d{1,5}))?$/);
+
+						var newSrc = `http://84.39.252.80/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(videos[videos.length - 1].href)}`;
+
+						//app.videoSrc = response.data.server + videos[0].href;
+						if (app.videoSrc != newSrc) {
+							app.videoSrc = newSrc;
+						}
+
+						//app.videoSrc = `http://84.39.252.80/get_video` + videos[0].href;
 						
+						this.$refs.vid.load();
 						this.$refs.vid.currentTime = currentTime.diff(startTime, 'seconds');
-						//this.$refs.vid.load();
+
+						console.log(startTime);
+						console.log(currentTime);
+						console.log(this.$refs.vid.currentTime);
+
+
+
 						//this.$refs.vid.play();
 					}
 				})

@@ -26,6 +26,8 @@ class GetShinobiAuth
 			if (empty($user->shinobi_ke))
 			{
 				$arguments = [
+					'timeout' => 10,
+					'connect_timeout' => 10,
 					'form_params' => [
 						'machineID' => md5($user->email),
 						'mail' => $user->email,
@@ -63,6 +65,8 @@ class GetShinobiAuth
 				if ($user->shinobi_time < Carbon::now())
 				{
 					$arguments = [
+						'timeout' => 10,
+						'connect_timeout' => 10,
 						'form_params' => [
 							'machineID' => md5($user->email),
 							'mail' => $user->email,

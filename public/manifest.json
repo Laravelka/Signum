@@ -1,0 +1,20 @@
+{
+    "name": "Signum.video",
+    "short_name": "Signum",
+    "start_url": "/",
+    "display": "fullscreen",
+    "theme_color": "#424242",
+    "background_color": "#303030",
+    "icons": [
+        {
+            "src": "/img/logo-192x192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "/img/logo-512x512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ]
+}

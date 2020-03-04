@@ -29,20 +29,29 @@ class VideosController extends Controller
 		) {
 			$data = Carbon::create($request->date);
 			
-			$url = $this->server.'/'.
-				$user->shinobi_token.
-				'/videos/'.
-				$user->shinobi_ke.'/'.
-				$request->monitor_id.
-				'?start='.
-				$data.
-				'&end='.
-				$data->addMinutes(10).
-				'&startOperator=>=';
+			// $timezone = $this->getTimezone($user->shinobi_token, $user->shinobi_ke, $request->monitor_id);
+			// $data->setTimezone($timezone);
+
+			$data->setTimezone(5);
+
+			$url = $this->server.'/' .
+				$user->shinobi_token .
+				'/videos/' .
+				$user->shinobi_ke . '/' .
+				$request->monitor_id . 
+				'?end='.
+				$data .
+				// '&end=' .
+				// $data->addMinutes(10) .
+				'&endOperator=>=';
 			
 			$response = $client->request('GET', $url);
 			$json = json_decode($response->getBody()->getContents(), true);
+
 			$json['server'] = $this->server;
+			$json['url'] = $url;
+			//$json['timezone'] = $timezone;
+			$json['data'] = $data->toString();
 			
 			$code = 200;
 		}
@@ -55,5 +64,30 @@ class VideosController extends Controller
 			$code = 403;
 		}
 		return response()->json($json, $code);
+	}
+
+	private function getTimezone($shinobi_token, $shinobi_ke, $monitor_id) {
+
+		$client = new \GuzzleHttp\Client();
+	
+		$url = $this->server.'/'.
+			$shinobi_token.
+			'/videos/'.
+			$shinobi_ke.'/'.
+			$monitor_id;
+			
+		$response = json_decode($client->request('GET', $url)->getBody()->getContents(), true);
+
+		if (isset($response['videos'][0])) {
+			preg_match('~([+-]\d\d):\d{2}$~', $response['videos'][0]['time'], $matches, PREG_OFFSET_CAPTURE);
+			if (isset($matches[1])) {
+				$ret = (($matches[1][0][0] == '+') ? 1 : -1) * ($matches[1][0][1] * 10 + $matches[1][0][2]);				
+				return $ret;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 }

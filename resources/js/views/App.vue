@@ -87,8 +87,6 @@
 				if (newRoute.meta.buttonId)
 				{
 					this.activeBtn = newRoute.meta.buttonId;
-					
-					
 				}
 			}
 		},
@@ -111,7 +109,6 @@
 		},
 		mounted() {
 			var app = this;
-			
 			
 			app.$root.$on('hide-object', function(data) {
 				data.forEach((item) => {
