@@ -45,6 +45,15 @@
 						<div class="priview" v-if="isPreload">
 							<v-progress-circular indeterminate color="primary"></v-progress-circular>
 						</div>
+						<div class="priview" v-else-if="isProcessing">
+							<v-progress-circular size="50" :color="progressColor" :value="preparationPercentage"
+								v-if="preparationPercentage !== undefined && preparationPercentage !== null"
+							>
+								 {{ preparationPercentage }}
+							</v-progress-circular>
+							<v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
+
+						</div>
 						<div
 							v-if="vidError"
 							class="errorBlock"
@@ -72,9 +81,12 @@
 							:src="videoSrc"
 							v-on:loadeddata="loadedData"
 							v-on:error="videoError"
+							v-on:ended="onVideoEnded"
 							v-on:play="onVideoPlay"
 							v-on:pause="onVideoPause"
 							v-on:abort="onVideoAbort"
+							v-on:timeupdate="onVideoTimeupdate"
+							v-on:seeked="onVideoSeeked"
 						></video>
 					</div>
 					<v-card-title>
@@ -117,16 +129,15 @@
 								>
 								</v-btn>
 							</div>
-							<v-btn fab text small>
-								<v-icon small @click="prevData">mdi-chevron-left</v-icon>
-							</v-btn>
-							<span class="ml-2 mr-2">{{ archive.dateString }}</span>
-							<v-btn fab text small @click="nextData">
-								<v-icon small>mdi-chevron-right</v-icon>
-							</v-btn>
+							<span>{{ archive.dateString }}</span>
 						</v-row>
 						<v-row class="" style="width: 100%;">
-							<timeline :params="timelineParams" @setNewTimelineCenter="onSetNewTimelineCenter()" ref="timeline"></timeline>
+							<timeline
+								:params="timelineParams"
+								@setNewTimelineCenter="onSetNewTimelineCenter()"
+								@pauseOnTimelineMove="onPauseOnTimelineMove()"
+								ref="timeline"
+							></timeline>
 						</v-row>
 					</v-card-actions> 
 				</v-card>
@@ -208,11 +219,19 @@
 	import moment from 'moment';
 	import lodash from 'lodash';
 	import download from 'downloadjs';
-	
+	import {
+		getCookie
+	} from '@/js/helpers/cookies';
+
 	moment.locale('ru');
 	
 	export default {
 		data: () => ({
+			server: "",
+			videos: [],
+			currentVideo: {},
+			progressColor: getCookie('darkTheme') == 1 ? 'light' : 'dark',
+			onSetNewTimelineCenterFlag: false,
 			timeNow: moment().format('LTS'),
 			videoSrc: false,
 			title: 'Монитор',
@@ -221,6 +240,8 @@
 			loaded: false,
 			isStream: true,
 			isPreload: true,
+			isProcessing: false,
+			preparationPercentage: 0,
 			loading: true,
 			monitor: null,
 			archive: {
@@ -230,8 +251,8 @@
 			},
 			timelineParams: {
 				range: {
-					min: moment().subtract(1, 'day'),
-					max: moment().add(1, 'day'),
+					min: moment().subtract(7, 'day'),
+					max: moment().add(7, 'day'),
 				},
 				downloadeditem: null, 
 				// center: moment().format(moment.HTML5_FMT.DATETIME_LOCAL_SECONDS),
@@ -241,12 +262,6 @@
 				play: false
 			}
 		}),
-		watch: {
-			'archive.dateNow': function(newDate, oldDate) {
-				if (oldDate !== false)
-					this.getVideoByDate(newDate);
-			}
-		},
 		created() {
 			var app = this;
 			var now = moment();
@@ -256,6 +271,14 @@
 			
 			app.$root.$emit('hide-object', ['bottomNavigation']);
 			
+			this.changeVideoDateThottled = _.debounce(this.changeVideoDate, 500); // Ограничиеваем вызов раз в 500 мс
+			this.changeArchiveTimeStringThottled =  _.throttle(this.changeArchiveTimeString, 200)
+
+		},
+		mounted() {
+
+			var app = this;
+
 			app.axios.post('/monitors/getById', {id: app.$route.params.id})
 			.then(response => {
 				app.monitor = response.data;
@@ -263,6 +286,25 @@
 				app.videoSrc = app.monitor.server + app.monitor.streams[0];
 				app.$root.$emit('active-panel', {id: -1, title: app.title});
 				
+				app.axios.post('/videos/getByMonitor', {monitor_id: app.monitor.mid})
+				.then(response => {
+					var videos = [];
+
+					this.$refs['timeline'].setVideosLabels(response.data.response.videos);
+
+					// response.data.response.videos.forEach((item, key,i) => {
+					// 	videos.push({
+					// 		id: key,
+					// 		content: item.mid,
+					// 		start: item.time,
+					// 		end: item.end,
+					// 	})
+					// });
+					// app.timelineParams.downloadeditem = videos;
+				})
+				.catch(error => {
+					console.error('Videos error: ', error);
+				});
 				app.loading = false;
 			})
 			.catch(error => {
@@ -271,18 +313,6 @@
 				
 				console.error('Ошибка получения камеры: ', error);
 			});
-
-			this.changeVideoDateThottled = _.debounce(this.changeVideoDate, 500); // Ограничиеваем вызов раз в 500 мс
-
-		},
-		mounted() {
-			this.updateTime();
-			// this.$refs.vid.oncanplay = function() {
-			// 	console.log(Date() + ': video can play')
-			// };
-			// this.$refs.vid.play = function() {
-			// 	console.log(Date() + ': video start play')
-			// }
 
 		},
 		methods: {
@@ -313,16 +343,28 @@
 				console.error(event);
 				
 				// this.$refs.vid.src = '';
+				this.isProcessing = false;
 				this.isPreload = false; 
 				this.vidError = true;
 			},
 
 			onVideoPlay(event) {
-				console.error(event);
-				
+				//console.error(event);
+				this.srcChangedFlag = false;
+				console.log(this.isProcessing);
+				this.isProcessing = false;
+				this.preparationPercentage = 0;
+				// Хранит время воспроизведения, чтобы можно было определить когда оно 
+				if (this.currentVideo.playStartTime === undefined) {
+					this.currentVideo.playStartTime = event.target.currentTime;
+				}
+
 				if (this.$refs['timeline']) {
 					this.$refs['timeline'].play();
 				}
+			},
+			onVideoSeeked(event) {
+				this.currentVideo.playStartTime = event.target.currentTime;
 			},
 			onVideoPause(event) {
 				console.error(event);
@@ -338,7 +380,55 @@
 					this.$refs['timeline'].stop();
 				}
 			},
+			onVideoTimeupdate(event) {
 
+				if (!this.onSetNewTimelineCenterFlag) {
+					if (this.currentVideo && this.currentVideo.time) {
+
+						if ((event.target.currentTime - this.currentVideo.playStartTime) > 5) {
+							var index = this.videos.indexOf(this.currentVideo);
+							if (index !== -1 && index !== 0) {
+								if (this.videos[index - 1] && !this.videos[index - 1].preparedFlag) {
+									this.prepareVideo(this.videos[index - 1]);
+									this.videos[index - 1].preparedFlag = true;
+								}
+							}
+						}
+
+						this.log('Время обновилось: ' + event.target.currentTime);
+						var currentTime = moment(this.currentVideo.time).add(event.target.currentTime / 1000, 'seconds');
+						currentTime.local();
+						currentTime = currentTime.add(event.target.currentTime, 'seconds');
+						this.log('Время обновилось: ' + currentTime.toString());
+						this.moveTimelineTo(currentTime);
+						this.archive.dateNow = currentTime;
+						this.timeNow = currentTime.format('LTS');
+						this.archive.dateString = ucFirst(currentTime.format('dddd DD-MM-YYYY'));
+					} 
+				}
+			},
+			onVideoEnded() {
+				var app = this;
+
+				var index = this.videos.indexOf(this.currentVideo);
+				if (index !== -1 && index !== 0) {
+					if (this.videos[index - 1]) {
+						this.currentVideo = this.videos[index - 1];
+						var match = this.server.match(/^(https?)?:\/\/([^:\/\\]+(?::\d{1,5}))?$/);
+						var newSrc = `/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(this.currentVideo.href)}`;
+						if (app.videoSrc != newSrc) {
+							this.changeVideoSrc(newSrc);
+							//app.videoSrc = newSrc;
+						}
+						this.$refs.vid.load();
+					}
+
+				}
+
+			},
+			onPauseOnTimelineMove() {
+				this.$refs.vid.pause();
+			},
 			playStream() {
 				this.videoSrc = this.monitor.server + this.monitor.streams[0];
 				this.isStream = true;
@@ -367,34 +457,7 @@
 					format('dddd DD-MM-YYYY')
 				);
 			},
-			getVideoByDate(date) {
-				var app = this;
-				
-				app.vidError = false;
-				app.isStream = false;
-				app.isPreload = true;
-				// app.$refs.vid.src = '';
-				
-				app.axios.post('/videos/getByMonitorId', {monitor_id: app.monitor.mid, date: date})
-				.then(response => {
-					const videos = response.data.videos;
-					
-					if (response.data.total < 1)
-					{
-						app.vidError = true;
-						app.isPreload = false;
-					}
-					else
-					{
-						app.archive.data = videos;
-						app.videoSrc = response.data.server + videos[0].href;
-					}
-				})
-				.catch(error => {
-					app.error = true;
-					console.error('Ошибка получение видео архива: ', error)
-				});
-			},
+
 			fullScreen() {
 				fullScreen(this.$refs.vid);
 			},
@@ -402,24 +465,61 @@
 				location.reload();
 			},
 			onSetNewTimelineCenter: function () {
-				//console.log(this.timelineParams.center);
+
+				this.onSetNewTimelineCenterFlag = true;
 				this.changeVideoDateThottled(this.timelineParams.center);
-				// this.getVideoByDate(this.timelineParams.center);
+
+				if (this.timelineParams.center) {
+
+					this.changeArchiveTimeStringThottled(this.timelineParams.center);
+					// var time = moment(this.timelineParams.center);
+					// this.archive.dateNow = time;
+					// this.timeNow = time.format('LTS');
+					// this.archive.dateString = ucFirst(time.format('dddd DD-MM-YYYY'));
+				}
+			},
+			changeVideoSrc(newSrc) {
+				this.isProcessing = true;
+				console.log(this.isProcessing);
+				this.preparationPercentage = 0;
+				this.videoSrc = newSrc;
+				this.srcChangedFlag = true;
+				this.updatePreparationPercentage();
+			},
+			updatePreparationPercentage() {
+				var match = this.server.match(/^(https?)?:\/\/([^:\/\\]+(?::\d{1,5}))?$/);
+				var src = `https://ex-coin.space/get_video/prepare/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(this.currentVideo.href)}`;
+
+				this.axios.get(src, {})
+				.then(response => {
+					this.preparationPercentage = response.data.preparationPercentage.toFixed();
+				console.log(this.isProcessing);
+				// debugger;
+					if (this.isProcessing) {
+						this.updatePreparationPercentage();
+					}
+				});
+
+			},
+			changeArchiveTimeString: function(center) {
+				this.log("Время изменилось");
+				var time = moment(this.timelineParams.center);
+				this.archive.dateNow = time;
+				this.timeNow = time.format('LTS');
+				this.archive.dateString = ucFirst(time.format('dddd DD-MM-YYYY'));
 			},
 			moveTimelineTo: function (time) {
 				this.$refs['timeline'].moveTimelineTo(time);
 			},
-
 			// changeVideoDateThottled: function() {},
 			changeVideoDate: function(date) {
-
 				var app = this;
+				
+				app.onSetNewTimelineCenterFlag = false;
 				app.vidError = false;
 				app.isStream = false;
 				app.isPreload = true;
 				
-				//console.log(new Date);
-
 				if (app.processingPostRequest) {
 					app.changeVideoDateThottled(date);
 				}
@@ -434,7 +534,8 @@
 					app.processingPostRequest = false;
 
 					const videos = response.data.videos;
-					
+					this.videos = response.data.videos;
+
 					if (response.data.total < 1) 
 					{
 						app.vidError = true;
@@ -446,27 +547,37 @@
 						app.isStream = true;
 						app.isPreload = false;
 
-						var startTime = moment(videos[videos.length - 1].time).utcOffset(0, true);
-						var currentTime = moment(date).utcOffset(0, true);
+						this.currentVideo = videos[videos.length - 1];
 
+						var startTime = moment(videos[videos.length - 1].time)/*.utcOffset(0, true)*/;
+						var currentTime = moment(date)/*.utcOffset(0, true)*/;
+						startTime.local();
+						currentTime.local();
+
+
+						if (currentTime.diff(startTime, 'seconds') < 0) {
+							currentTime = startTime;
+						}
+
+						this.server = response.data.server;
 						var match = response.data.server.match(/^(https?)?:\/\/([^:\/\\]+(?::\d{1,5}))?$/);
 
-						var newSrc = `http://84.39.252.80/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(videos[videos.length - 1].href)}`;
+						var newSrc = `/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(videos[videos.length - 1].href)}`;
 
 						//app.videoSrc = response.data.server + videos[0].href;
 						if (app.videoSrc != newSrc) {
-							app.videoSrc = newSrc;
+							this.changeVideoSrc(newSrc);
+							//app.videoSrc = newSrc;
 						}
-
-						//app.videoSrc = `http://84.39.252.80/get_video` + videos[0].href;
 						
 						this.$refs.vid.load();
 						this.$refs.vid.currentTime = currentTime.diff(startTime, 'seconds');
 
+						console.log('Вывод инфы время поиска, время начала ролика, фактически установленное время, реальное $refs.vid.currentTime время видоса');
+						console.log(moment(date).utcOffset(0, true));
 						console.log(startTime);
 						console.log(currentTime);
 						console.log(this.$refs.vid.currentTime);
-
 
 
 						//this.$refs.vid.play();
@@ -481,9 +592,20 @@
 				});
 
 			},
+			prepareVideo(video) {
+				var match = this.server.match(/^(https?)?:\/\/([^:\/\\]+(?::\d{1,5}))?$/);
+				var src = `https://ex-coin.space/get_video/prepare/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(video.href)}`;
+
+				this.axios.get(src, {})
+				.then(response => {
+					// Не интересует. Нужно лишь отправить.
+				});
+
+			},
+
 			log: function(string) {
-				console.log(Date() + ': ' + string)
-			}
+				console.log(Date() + ': ' + string);
+			},
 		}                                          
 	}
 </script>

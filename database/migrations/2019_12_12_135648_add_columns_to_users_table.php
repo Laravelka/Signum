@@ -14,7 +14,7 @@ class AddColumnsToUsersTable extends Migration
 	public function up()
 	{
 		Schema::table('users', function (Blueprint $table) {
-			$table->bigInteger('server_id')->unsigned();
+			$table->bigInteger('server_id')->unsigned()->nullable();
 			$table->foreign('server_id')->references('id')->on('servers');
 		});
 	}

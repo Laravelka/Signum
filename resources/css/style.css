@@ -9,15 +9,19 @@ a {text-decoration: none!important;}
 	display: block  !important;
 }
 
-.vis-text {
-	color: white !important;
-}
-
 .vis-custom-time.custome-type-center {
 	color: red  !important;
 }
 
 .vis-item.vis-background {
 	background-color: aqua;
+}
+
+#visualization .vis-text {
+	color: black !important;
+}
+
+#visualization.dark .vis-text {
+	color: white !important;
 }
 

@@ -43,7 +43,7 @@ const router = new VueRouter({
 		{
 			path: '/monitor/:id',
 			name: 'monitor',
-			component: Monitor,
+			component: Monit,
 			meta: {
 				auth: true
 			}
@@ -70,7 +70,7 @@ const router = new VueRouter({
 			name: 'notify',
 			component: Notify,
 			meta: {
-				auth: true,
+				auth: {roles: 'admin'},
 				buttonId: 2,
 			}
 		},

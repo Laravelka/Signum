@@ -41,8 +41,8 @@ class VideosController extends Controller
 				$request->monitor_id . 
 				'?end='.
 				$data .
-				// '&end=' .
-				// $data->addMinutes(10) .
+				'&limit=' .
+				config('shinobi.videos.limit') .
 				'&endOperator=>=';
 			
 			$response = $client->request('GET', $url);
@@ -65,7 +65,45 @@ class VideosController extends Controller
 		}
 		return response()->json($json, $code);
 	}
-
+	
+	public function getByMonitor(Request $request)
+	{
+		$user = Auth::user();
+		$client = new \GuzzleHttp\Client();
+		
+		if (
+			$this->server && 
+			!empty($user->shinobi_ke) && 
+			!empty($request->monitor_id)
+		) {
+			$url = $this->server.'/' .
+				$user->shinobi_token .
+				'/videos/' .
+				$user->shinobi_ke . '/' .
+				$request->monitor_id .
+				'?limit=' .
+				config('shinobi.videos.limit');
+			
+			$httpResponse = $client->request('GET', $url);
+			$response = json_decode($httpResponse->getBody()->getContents(), true);
+			
+			$json = [
+				'message' => 'Вродь работает',
+				'response' => $response
+			];
+			$code = 200;
+		}
+		else
+		{
+			$json = [
+				'error' => true,
+				'message' => 'Запрос не прошел, были отправлены не все параметры, обновите страницу и попытайтесь еще раз.'
+			];
+			$code = 403;
+		}
+		return response()->json($json, $code);
+	}
+	
 	private function getTimezone($shinobi_token, $shinobi_ke, $monitor_id) {
 
 		$client = new \GuzzleHttp\Client();
@@ -74,7 +112,9 @@ class VideosController extends Controller
 			$shinobi_token.
 			'/videos/'.
 			$shinobi_ke.'/'.
-			$monitor_id;
+			$monitor_id .
+			'?limit=' .
+			config('shinobi.videos.limit');
 			
 		$response = json_decode($client->request('GET', $url)->getBody()->getContents(), true);
 

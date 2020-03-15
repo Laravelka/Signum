@@ -1,46 +1,25 @@
 <template>
-
-	<div id='visualization' ref="visualization" style="height: 60px; width: 100%;" @wheel="onWhell"></div>
-
+	<div id='visualization' ref="visualization" style="height: 60px; width: 100%;" @wheel="onWhell" v-bind:class="{dark: $vuetify.theme.dark}"></div>
 </template>
 
 <style>
-
 </style>
+
 <script>
 	import { ucFirst, fullScreen, fullScreenCancel } from '@/js/helpers/functions';
 	import moment from 'moment';
 	import download from 'downloadjs';
 
-	import { DataSet, Timeline } from 'vis/index-timeline-graph2d';
+	import { DataSet, Timeline } from 'vis-timeline/dist/vis-timeline-graph2d.esm.js';
 
 	moment.locale('ru');
 	
 	export default {
-		name: 'timeline',
-		/*
-		params = {
-			range: {
-				min: moment().subtract(1, 'month'),
-				max: moment(),
-			},
-			downloadeditem: {
-				start: moment().subtract(2, 'days'),
-				end: moment().subtract(1, 'days'),
-				id: "timeline-downloaded-item",
-				type: 'background',
-			},
-			center: null,
-			play: false
-
-		}
-		*/
-		
+		name: 'timeline',		
 		props: ['params'],
 		data: function () {
 			var now = +(new Date()); 
 			return {
-				interval: null, // нужна ли вообще? Переменная для сохранения таймера
 				timelineinstance: null,
 			};
 		},
@@ -64,11 +43,47 @@
 				event.preventDefault();
 			},
 			moveTimelineTo: function (time) {
-
-				this.timelineinstance.moveTo(time);
-
-				// Тут можно сделать обработку того случая, когда движение при произведении. Ну а пока пауза
+				this.timelineinstance.moveTo(time, {animation: false});
 				this.params.play = false;
+			},
+			/**
+			 * Принимает два массива видосов на случай, если будет список ДО и ПОСЛЕ
+			 * какого-то времени
+			 */
+			setVideosLabels: function (videos1, videos2) {
+				var items = [];
+				videos1 = videos1 || [];
+				videos2 = videos2 || [];
+
+				videos1.forEach((item, key,i) => {
+					var start = moment(item.time);
+					var end = moment(item.end);
+					var type = 'background'
+					var style = 'background: #667d88;';
+					items.push({
+						start: start,
+						end: end,
+						type: type,
+						style: style,
+					});
+				});
+
+				videos2.forEach((item, key,i) => {
+					var start = moment(item.time);
+					var end = moment(item.end);
+					var type = 'background'
+					var style = 'background: #667d88;';
+					items.push({
+						start: start,
+						end: end,
+						type: type,
+						style: style,
+					});
+				});
+
+				var itemsSet = new DataSet(items);
+				this.timelineinstance.setItems(itemsSet);
+
 			},
 			play:function() {
 				this.params.play = true;
@@ -79,10 +94,10 @@
 		},
 		computed: {
 		},
-		watch: {
-		},
 		mounted: function (argument) {
 			var container = this.$refs["visualization"];
+			
+			console.log(this.params.downloadeditem);
 			if (this.params.downloadeditem) {
 				var items = new DataSet([this.params.downloadeditem]);
 			} else {
@@ -99,58 +114,41 @@
 
 			}
 
+			// Не осилил в красоту. Изначально отображается синяя полоска по центру и с двух сторон по бокам по 1 дня.
+			// var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(1, 'day');
+			// var end = moment((this.params.range.min + this.params.range.max) / 2).add(1, 'day');
+			var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(1, 'hours');
+			var end = moment((this.params.range.min + this.params.range.max) / 2).add(1, 'hours');
+
 			var options = {
 				min: this.params.range.min,
 				max: this.params.range.max,
-				end: this.params.average.subtract(1, 'day'),
-				end: this.params.average.add(1, 'day'),
+				start: start,
+				end: end,
 				zoomMin: 5000, // Вся полоска отображает минимально ширину в 5 секунд, ближе не приблизить
 				showCurrentTime: false,
 			};
 			this.timelineinstance = new Timeline(container, items, options);
-			this.timelineinstance.addCustomTime(this.params.average, "custome-type-center"); // Вертикальная полоса, которая будет центроваться после
+			// Вертикальная полоса, которая будет центроваться после
+			this.timelineinstance.addCustomTime(this.params.average, "custome-type-center"); 
 			this.timelineinstance.moveTo(this.params.average, {animation: false});
 
-			// /* Костыли, костыли, грёбаные костыли */
-			// if (!this.params.center) { 
-
-			// 	var timewindow = this.timelineinstance.getWindow();
-			// 	var end = moment(timewindow.end);
-			// 	var start = moment(timewindow.start);
-			// 	var average = moment((end + start)/2)
-			// 	this.timelineinstance.addCustomTime(average, "custome-type-center"); // Вертикальная полоса, которая будет центроваться после
-
-			// } else {
-
-			// 	this.timelineinstance.moveTo(this.params.center, {animation: false});
-			// 	this.timelineinstance.addCustomTime(this.params.center, "custome-type-center"); // Вертикальная полоса, которая будет центроваться после
-
-			// }
-
-			// Была идея сделать разные линии для центра и текущая.
-			// Чекай https://visjs.github.io/vis-timeline/examples/timeline/editing/updateDataOnEvent.html .
-			// Но забил, уходя спать
-			//setCustomTime(moment(), 3); // Вертикальная полоса течение времени	
 
 			this.timelineinstance.on('rangechange', (properties) => {
 
-				// Вычисление средней даты между верхней и нижней видимой.
-				// Считается неэффективно из-за множественной перегонки через moment,
-				// но мне через 6-7 часов уже вставать, спать пора.
+				var end = moment(properties.end);
+				var start = moment(properties.start);
+				var average = moment((end + start)/2);
+				this.params.center = average.format(moment.HTML5_FMT.DATETIME_SECONDS);
+				this.timelineinstance.setCustomTime(average, "custome-type-center")
 
-				// console.log(Date() + 'new redraw');
+				if (properties.byUser) {
+					console.log('byUser');
 
-				// var end = moment(properties.end);
-				// var start = moment(properties.start);
-				// var average = moment((end + start)/2);
-				// this.params.center = average.format(moment.HTML5_FMT.DATETIME_SECONDS);
-				// this.timelineinstance.setCustomTime(average, "custome-type-center")
-
-				// if (properties.byUser) {
-				// 	console.log('byUser');
-				// 	this.params.play = "false";
-				// 	this.$emit('setNewTimelineCenter');
-				// }
+					this.$emit('pauseOnTimelineMove');
+					this.params.play = "false";
+					this.$emit('setNewTimelineCenter');
+				}
 
 			});
 
@@ -158,31 +156,8 @@
 		created: function () {
 		},
 		watch: {
-			'params.play': function () {
-
-				console.log('params.play');
-
-				if (this.params.play) {
-					var timewindow = this.timelineinstance.getWindow();
-					var end = moment(timewindow.end);
-					var start = moment(timewindow.start);
-					var average = moment((end + start)/2).add(1, 'hour');
-
-
-					this.timelineinstance.moveTo(average, {animation: {duration: 60*60*1000, easingFunction: "linear"}});
-				} else {
-
-					var timewindow = this.timelineinstance.getWindow();
-					var end = moment(timewindow.end);
-					var start = moment(timewindow.start);
-					var average = moment((end + start)/2);
-
-					this.timelineinstance.moveTo(average, false);
-
-				}
-			},
 			'params.downloadeditem': function() {
-				debugger;
+				//debugger;
 			}
 		}
 	}

@@ -28,6 +28,7 @@
 						:error-messages="messages.email.label"
 						solo
 						rounded
+						v-on:keyup.enter="validate"
 						prepend-inner-icon="mdi-mail"
 					></v-text-field>
 					<v-text-field
@@ -41,6 +42,7 @@
 						@click:append="show1 = !show1"
 						solo
 						rounded
+						v-on:keyup.enter="validate"
 						prepend-inner-icon="mdi-lock"
 					></v-text-field>
 					<div class="pa-1" justify="spce-between">
@@ -89,86 +91,89 @@
 		}),
 		methods: {
 			validate() {
-				let app = this;
-				
 				if (this.$refs.form.validate())
 				{
-					this.$auth.login({
-						body: this.data,
-						params: {
-							email: app.email,
-							password: app.password
-						},
-						error: function(error) {
-							const response = error.response;
-							
-							if (response.data.error && response.data.message)
-							{
-								app.error = true;
-								app.message = response.data.message;
-								
-								setTimeout(() => { app.error = false }, 5000);
-							}
-							else if (response.data.error && response.data.messages)
-							{
-								const messages = response.data.messages;
-								
-								for( let index in messages)
-								{
-									app.messages[index].state = true;
-									app.messages[index].label = messages[index][0];
-								}
-								setTimeout(function() {
-									app.messages = {
-										email: {
-											state: false,
-											label: []
-										},
-										password: {
-											state: false,
-											label: []
-										}
-									};
-								}, 5000);
-							}
-						},
-						success: function(response) {
-							
-							if (response.data.error && response.data.message)
-							{
-								app.error = true;
-								app.message = response.data.message;
-								
-								setTimeout(() => { app.error = false }, 5000);
-							}
-							else if (response.data.error && response.data.messages)
-							{
-								const messages = response.data.messages;
-								
-								for( let index in messages)
-								{
-									app.messages[index].state = true;
-									app.messages[index].label = messages[index][0];
-								}
-								setTimeout(function() {
-									app.messages = {
-										email: {
-											state: false,
-											label: []
-										},
-										password: {
-											state: false,
-											label: []
-										}
-									};
-								}, 5000);
-							}
-						},
-						rememberMe: true,
-						fetchUser: false,
-						redirect: '/'
-					});
+					this.auth();
 				}
+			},
+			auth() {
+				let app = this;
+				
+				app.$auth.login({
+					body: app.data,
+					params: {
+						email: app.email,
+						password: app.password
+					},
+					error: function(error) {
+						const response = error.response;
+
+						if (response.data.error && response.data.message)
+						{
+							app.error = true;
+							app.message = response.data.message;
+
+							setTimeout(() => { app.error = false }, 5000);
+						}
+						else if (response.data.error && response.data.messages)
+						{
+							const messages = response.data.messages;
+
+							for( let index in messages)
+							{
+								app.messages[index].state = true;
+								app.messages[index].label = messages[index][0];
+							}
+							setTimeout(function() {
+								app.messages = {
+									email: {
+										state: false,
+										label: []
+									},
+									password: {
+										state: false,
+										label: []
+									}
+								};
+							}, 5000);
+						}
+					},
+					success: function(response) {
+
+						if (response.data.error && response.data.message)
+						{
+							app.error = true;
+							app.message = response.data.message;
+
+							setTimeout(() => { app.error = false }, 5000);
+						}
+						else if (response.data.error && response.data.messages)
+						{
+							const messages = response.data.messages;
+
+							for( let index in messages)
+							{
+								app.messages[index].state = true;
+								app.messages[index].label = messages[index][0];
+							}
+							setTimeout(function() {
+								app.messages = {
+									email: {
+										state: false,
+										label: []
+									},
+									password: {
+										state: false,
+										label: []
+									}
+								};
+							}, 5000);
+						}
+					},
+					rememberMe: true,
+					fetchUser: false,
+					redirect: '/'
+				});
 			}
 		}
 	}

@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "xyz.appmaker.amshim",
+      "sha256_cert_fingerprints": ["F1:0D:EC:70:8B:BB:F9:43:44:70:02:3B:5F:49:1C:25:56:73:AE:26:34:32:A4:FD:5F:A0:DB:41:18:2E:DE:7A"]
+    }
+  }
+]

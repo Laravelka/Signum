@@ -26,10 +26,19 @@ Route::prefix('auth')->group(function() {
 });
 
 Route::prefix('videos')->middleware('jwt.auth')->group(function() {
+	Route::post('getByMonitor', 'Api\VideosController@getByMonitor');
 	Route::post('getByMonitorId', 'Api\VideosController@getByMonitorId');
 });
 
 Route::prefix('monitors')->middleware('jwt.auth')->group(function() {
 	Route::get('getAll', 'Api\MonitorsController@getAll');
 	Route::post('getById', 'Api\MonitorsController@getById');
+});
+
+Route::prefix('admin')->group(function() {
+	Route::post('login', 'Api\Admin\AuthController@login');
+	Route::prefix('server')->group(function() {
+		Route::get('getAll', 'Api\Admin\ServerController@getAll');
+		Route::get('getById', 'Api\Admin\ServerController@getById');
+	});
 });

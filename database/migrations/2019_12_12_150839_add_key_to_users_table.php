@@ -14,7 +14,7 @@ class AddKeyToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('shinobi_password');
+            $table->string('shinobi_password')->nullable();
         });
     }
 
