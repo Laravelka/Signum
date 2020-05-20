@@ -17,7 +17,7 @@ class User extends Authenticatable implements JWTSubject
 	 * @var array
 	 */
 	protected $fillable = [
-		'name', 'email', 'password',
+		'roles', 'name', 'email', 'password', 'server_id', 'shinobi_ke', 'shinobi_password'
 	];
 
 	/**
@@ -61,5 +61,10 @@ class User extends Authenticatable implements JWTSubject
 	public function server()
 	{
 		return Server::find($this->server_id);
+	}
+	
+	public function hasRole($role)
+	{
+		return $this->roles == $role;
 	}
 }

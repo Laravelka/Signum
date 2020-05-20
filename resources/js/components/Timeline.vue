@@ -26,7 +26,6 @@
 		methods: {
 			updateDownloaded: function () {
 				if (this.params.downloadeditem) {
-
 					var items = new DataSet([{
 						start: this.params.downloadeditem.start,
 						end: this.params.downloadeditem.end,
@@ -59,7 +58,7 @@
 					var start = moment(item.time);
 					var end = moment(item.end);
 					var type = 'background'
-					var style = 'background: #667d88;';
+					var style = 'background: #7495a5;';
 					items.push({
 						start: start,
 						end: end,
@@ -72,7 +71,7 @@
 					var start = moment(item.time);
 					var end = moment(item.end);
 					var type = 'background'
-					var style = 'background: #667d88;';
+					var style = 'background: #7495a5;';
 					items.push({
 						start: start,
 						end: end,
@@ -80,10 +79,11 @@
 						style: style,
 					});
 				});
-
 				var itemsSet = new DataSet(items);
+				
 				this.timelineinstance.setItems(itemsSet);
-
+				
+				this.$root.$emit('setVideosLabels', true);
 			},
 			play:function() {
 				this.params.play = true;
@@ -94,7 +94,7 @@
 		},
 		computed: {
 		},
-		mounted: function (argument) {
+		mounted(argument) {
 			var container = this.$refs["visualization"];
 			
 			console.log(this.params.downloadeditem);
@@ -115,8 +115,8 @@
 			}
 
 			// Не осилил в красоту. Изначально отображается синяя полоска по центру и с двух сторон по бокам по 1 дня.
-			// var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(1, 'day');
-			// var end = moment((this.params.range.min + this.params.range.max) / 2).add(1, 'day');
+			// var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(2, 'day');
+			// var end = moment((this.params.range.min + this.params.range.max) / 2).add(2, 'day');
 			var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(1, 'hours');
 			var end = moment((this.params.range.min + this.params.range.max) / 2).add(1, 'hours');
 
@@ -125,7 +125,7 @@
 				max: this.params.range.max,
 				start: start,
 				end: end,
-				zoomMin: 5000, // Вся полоска отображает минимально ширину в 5 секунд, ближе не приблизить
+				zoomMin: 10000, // Вся полоска отображает минимально ширину в 5 секунд, ближе не приблизить
 				showCurrentTime: false,
 			};
 			this.timelineinstance = new Timeline(container, items, options);
@@ -154,6 +154,7 @@
 
 		},
 		created: function () {
+			console.log("timeline created");
 		},
 		watch: {
 			'params.downloadeditem': function() {

@@ -12,6 +12,6 @@ mix.webpackConfig({
 
 mix.js('resources/js/app.js', 'public/js')
 	.sass('resources/sass/app.scss', 'public/css')
-	.copyDirectory('resources/img', 'public/img')
-	.copy('resources/js/service-worker.js', 'public/service-worker.js')
+	.copyDirectory('resources/images', 'public/images')
+	.copy('resources/js/sw.js', 'public/firebase-messaging-sw.js')
 	.version();

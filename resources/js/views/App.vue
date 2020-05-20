@@ -3,7 +3,7 @@
 		<v-navigation-drawer
 			app
 			v-model="drawer"
-			v-if="$auth.check()"
+			v-if="$auth.ready() && $auth.check()"
 		>
 			<v-list-item>
 				<v-list-item-content>
@@ -15,12 +15,10 @@
 					</v-list-item-subtitle>
 				</v-list-item-content>
 			</v-list-item>
-
 			<v-divider></v-divider>
-
 			<v-list dense>
 				<v-list-item-group v-model="activeBtn">
-					<v-list-item v-for="item in drawerLinks" v-bind:key="item.icon" @click.prevent="clickLink(item)" link>
+					<v-list-item v-for="item in drawerLinks[$auth.user().roles]" v-bind:key="item.icon" @click.prevent="clickLink(item)" link>
 						<v-list-item-action>
 							<v-icon>{{ item.icon }}</v-icon>
 						</v-list-item-action>
@@ -31,9 +29,9 @@
 				</v-list-item-group>
 			</v-list>
 		</v-navigation-drawer>
-		<div v-if="$router.currentRoute.path !== '/'">
+		<div v-if="$router.currentRoute.path !== '/' && $router.currentRoute.path !== '/admin'">
 			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark>
-				<v-btn icon @click.prevent="goBack()">
+				<v-btn icon @click="goBack">
 					<v-icon>mdi-arrow-left</v-icon>
 				</v-btn>
 				<v-toolbar-title>{{ title }}</v-toolbar-title>
@@ -48,11 +46,11 @@
 		<v-content>
 			<router-view></router-view>
 		</v-content>
-		<v-bottom-navigation v-if="$auth.check() && !hide.bottomNavigation"  :value="activeBtn" grow hide-on-scroll fixed app>
+		<v-bottom-navigation v-if="$auth.check() && !hide.bottomNavigation && $auth.user().roles != 'admin'"  :value="activeBtn" grow hide-on-scroll fixed app>
 			<v-btn :to="{name: 'home'}">
 				<v-icon>mdi-home</v-icon>
 			</v-btn>
-			<v-btn :to="{name: 'notify'}">
+			<v-btn :to="{name: 'notifications'}">
 				<v-icon>mdi-bell</v-icon>
 			</v-btn>
 			<v-btn :to="{name: 'settings'}">
@@ -75,12 +73,20 @@
 			title: 'Signum.video',
 			drawer: null,
 			activeBtn: null,
-			drawerLinks: [
-				{to: {name: 'home'}, title: 'Главная', icon: 'mdi-home'},
-				{to: {name: 'notify'}, title: 'Уведомления', icon: 'mdi-bell'},
-				{to: {name: 'settings'}, title: 'Настройки', icon: 'mdi-settings'},
-				{title: 'Выход', icon: 'mdi-exit-to-app', isExit: true}
-			]
+			drawerLinks: {
+				user: [
+					{to: {name: 'home'}, title: 'Главная', icon: 'mdi-home'},
+					{to: {name: 'notifications'}, title: 'Уведомления', icon: 'mdi-bell'},
+					{to: {name: 'settings'}, title: 'Настройки', icon: 'mdi-settings'},
+					{title: 'Выход', icon: 'mdi-exit-to-app', isExit: true}
+				],
+				admin: [
+					{to: {name: 'adminHome'}, title: 'Главная', icon: 'mdi-home'},
+					{to: {name: 'adminNotifications'}, title: 'Уведомления', icon: 'mdi-bell'},
+					{to: {name: 'adminSettings'}, title: 'Настройки', icon: 'mdi-settings'},
+					{title: 'Выход', icon: 'mdi-exit-to-app', isExit: true}
+				]
+			}
 		}),
 		watch: {
 			'$route': function(newRoute) {
@@ -103,8 +109,7 @@
 				}
 			},
 			goBack() {
-				this.hide.bottomNavigation = false;
-				this.$router.push('/');
+				window.history.length > 1 ? this.$router.go(-1) : this.$router.push('/')
 			}
 		},
 		mounted() {

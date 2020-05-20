@@ -15,6 +15,10 @@ Route::get('/{any}', function() {
     return view('welcome');
 })->where('any', '.*');
 
+/*Route::any('firebase-cloud-messaging-push-scope', function() {
+	return ['test' => true];	
+});
+
 /*
 Auth::routes();
 

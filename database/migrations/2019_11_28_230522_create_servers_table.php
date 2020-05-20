@@ -18,6 +18,8 @@ class CreateServersTable extends Migration
 			$table->ipAddress('ip');
 			$table->string('name');
 			$table->timestamps();
+			$table->string('super_email');
+			$table->string('super_password');
 		});
 	}
 

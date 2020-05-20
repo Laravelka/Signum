@@ -13,10 +13,10 @@
 						Signum.video
 					</h1>
 					<v-alert
-						type="error"
 						elevation="3"
 						class="mb-4"
-						v-if="error && message"
+						v-if="message"
+						:type="messageType"
 					>
 						{{ message }}
 					</v-alert>
@@ -69,6 +69,7 @@
 			error: false,
 			show1: false,
 			message: null,
+			messageType: 'error',
 			messages: {
 				email: {
 					state: false,
@@ -106,18 +107,18 @@
 						password: app.password
 					},
 					error: function(error) {
-						const response = error.response;
+						const data = error.response.data;
 
-						if (response.data.error && response.data.message)
+						if (data.error && data.message)
 						{
 							app.error = true;
-							app.message = response.data.message;
+							app.message = data.message;
 
 							setTimeout(() => { app.error = false }, 5000);
 						}
-						else if (response.data.error && response.data.messages)
+						else if (data.error && data.messages)
 						{
-							const messages = response.data.messages;
+							const messages = data.messages;
 
 							for( let index in messages)
 							{
@@ -139,17 +140,18 @@
 						}
 					},
 					success: function(response) {
-
-						if (response.data.error && response.data.message)
+						const data = response.data;
+						
+						if (data.error && data.message)
 						{
 							app.error = true;
-							app.message = response.data.message;
+							app.message = data.message;
 
 							setTimeout(() => { app.error = false }, 5000);
 						}
-						else if (response.data.error && response.data.messages)
+						else if (data.error && data.messages)
 						{
-							const messages = response.data.messages;
+							const messages = data.messages;
 
 							for( let index in messages)
 							{
@@ -169,10 +171,33 @@
 								};
 							}, 5000);
 						}
+						else if (data.message)
+						{
+							app.message = data.message;
+							app.messageType = 'success';
+							
+							if (data.user)
+							{
+								localStorage.setItem('userData', JSON.stringify(data.user));
+								
+								if (data.user.roles == 'admin')
+								{
+									app.$router.push('/admin');
+								}
+								else
+								{
+									app.$router.push('/');
+								}
+							}
+							setTimeout(function() {
+								app.message = null;
+								app.messageType = 'error';
+							}, 2000);
+						}
 					},
 					rememberMe: true,
-					fetchUser: false,
-					redirect: '/'
+					fetchUser: true,
+					redirect: false
 				});
 			}
 		}

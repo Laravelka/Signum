@@ -20,49 +20,13 @@ class GetShinobiAuth
 		if (Auth::check())
 		{
 			$user = Auth::user();
-			$client = new \GuzzleHttp\Client();
-			$server = 'http://'.$user->server()->ip.'/';
 			
-			if (empty($user->shinobi_ke))
+			if ($user->roles !== 'admin')
 			{
-				$arguments = [
-					'timeout' => 10,
-					'connect_timeout' => 10,
-					'form_params' => [
-						'machineID' => md5($user->email),
-						'mail' => $user->email,
-						'pass' => $user->shinobi_password,
-						'function' => 'dash'
-					]
-				];
-				
-				$response = $client->request(
-					'POST',
-					$server.'?json=true',
-					$arguments
-				);
-				$data = json_decode($response->getBody()->getContents(), true);
+				$client = new \GuzzleHttp\Client();
+				$server = 'http://'.$user->server()->ip.'/';
 
-				if (!empty($data['$user']['ok']))
-				{
-					$user->shinobi_ke = $data['$user']['ke'];
-					$user->shinobi_time = Carbon::now()->addHours(1);
-					$user->shinobi_token = $data['$user']['auth_token'];
-					$user->save();
-				}
-				else
-				{
-					return response()->json([
-						'args' => [$arguments, $server],
-						'error' => true,
-						'message' => 'Авторизация не прошла.',
-						'response' => $data
-					], 403);
-				}
-			}
-			else
-			{
-				if ($user->shinobi_time < Carbon::now())
+				if (empty($user->shinobi_ke))
 				{
 					$arguments = [
 						'timeout' => 10,
@@ -74,7 +38,7 @@ class GetShinobiAuth
 							'function' => 'dash'
 						]
 					];
-					
+
 					$response = $client->request(
 						'POST',
 						$server.'?json=true',
@@ -92,11 +56,51 @@ class GetShinobiAuth
 					else
 					{
 						return response()->json([
-							'args' => [$arguments, $server, bcrypt('signum56')],
-							'error' => true, 
+							'args' => [$arguments, $server],
+							'error' => true,
 							'message' => 'Авторизация не прошла.',
 							'response' => $data
 						], 403);
+					}
+				}
+				else
+				{
+					if ($user->shinobi_time < Carbon::now())
+					{
+						$arguments = [
+							'timeout' => 10,
+							'connect_timeout' => 10,
+							'form_params' => [
+								'machineID' => md5($user->email),
+								'mail' => $user->email,
+								'pass' => $user->shinobi_password,
+								'function' => 'dash'
+							]
+						];
+
+						$response = $client->request(
+							'POST',
+							$server.'?json=true',
+							$arguments
+						);
+						$data = json_decode($response->getBody()->getContents(), true);
+
+						if (!empty($data['$user']['ok']))
+						{
+							$user->shinobi_ke = $data['$user']['ke'];
+							$user->shinobi_time = Carbon::now()->addHours(1);
+							$user->shinobi_token = $data['$user']['auth_token'];
+							$user->save();
+						}
+						else
+						{
+							return response()->json([
+								'args' => [$arguments, $server, bcrypt('signum56')],
+								'error' => true, 
+								'message' => 'Авторизация не прошла.',
+								'response' => $data
+							], 403);
+						}
 					}
 				}
 			}

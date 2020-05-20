@@ -12,7 +12,7 @@ class MonitorsController extends Controller
 
 	public function __construct() {
 		if (Auth::check())
-			$this->server = 'http://'.auth()->user()->server()->ip;
+			$this->server = auth()->user()->server()->ip;
 	}
 	
 	public function getAll(Request $request)
@@ -34,7 +34,7 @@ class MonitorsController extends Controller
 			foreach($json as $key => $value)
 			{
 				$json[$key]['hash'] = md5(time());
-				$json[$key]['screen'] = $this->server.'/'.$user->shinobi_token.'/jpeg/'.$user->shinobi_ke.'/'.$value['mid'].'/s.jpg';
+				$json[$key]['screen'] = config('app.url').'/proxy/'.$this->server.'/'.$user->shinobi_token.'/jpeg/'.$user->shinobi_ke.'/'.$value['mid'].'/s.jpg';
 			}
 			$code = 200;
 		}
@@ -64,7 +64,7 @@ class MonitorsController extends Controller
 				'connect_timeout' => 3.14
 			]);
 			$json = json_decode($response->getBody()->getContents(), true);
-			$json['server'] = $this->server;
+			$json['server'] = config('app.url').'/proxy/'.$this->server;
 			$code = 200;
 		}
 		else

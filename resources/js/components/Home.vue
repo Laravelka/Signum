@@ -30,7 +30,7 @@
 				<p>
 					Зайдите чуть позже или обновите страницу
 				</p>
-				<v-btn @click="reloadPage" dark>Обновить</v-btn>
+				<v-btn @click="reloadPage" text><v-icon left dark>mdi-refresh</v-icon> Обновить</v-btn>
 			</v-col>
 		</v-row>
 	</v-container>

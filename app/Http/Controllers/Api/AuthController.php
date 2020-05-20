@@ -17,6 +17,7 @@ class AuthController extends Controller
 	{
 		// $this->middleware('auth:api', ['except' => ['login', 'registration']]);
 	}
+	
 	public function login(Request $request)
 	{
 		$validator = Validator::make($request->all(), [
@@ -34,7 +35,7 @@ class AuthController extends Controller
 		$credentials = $request->only('email', 'password');
 		
 		try {
-			if (! $token = JWTAuth::attempt($credentials))
+			if (!$token = JWTAuth::attempt($credentials))
 			{
 				return response()
 					->json(['error' => true, 'message' => 'Неверный E-mail или пароль'], 401);
@@ -43,7 +44,7 @@ class AuthController extends Controller
 			return response()->json(['error' => true, 'message' => 'could_not_create_token'], 500);
 		}
 		return response()
-			->json(['message' => 'Авторизация прошла успешно'])
+			->json(['user' => JWTAuth::user(), 'message' => 'Авторизация прошла успешно'])
 			->header('Authorization', $token);
 	}
 	

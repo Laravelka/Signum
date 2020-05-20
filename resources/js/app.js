@@ -15,17 +15,9 @@ import 'vis-timeline/dist/vis-timeline-graph2d.min.css';
 Vue.use(VueAxios, axios);
 Vue.component('timeline', timeline);
 
-axios.defaults.baseURL =  'https://ex-coin.space/api';
+axios.defaults.baseURL = 'https://ex-coin.space/api';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Authorization'] = 'Bearer ' + getCookie('default_auth_token');
-
-axios.interceptors.response.use((response) => {
-	let headers = response.headers;
-	
-	console.log('RESPONSE: ', response);
-	
-	return response;
-});
 
 window.axios = axios;
 Vue.use(Vuetify);
@@ -33,7 +25,7 @@ Vue.router = Routes;
 
 Vue.use(require('@websanova/vue-auth'), {
 	rolesVar: 'roles',
-	fecthData: { enabled: false },
+	fecthData: { enabled: true },
 	refreshData: { enabled: false },
 	logoutData: { redirect: '/login' },
 	auth: require('@websanova/vue-auth/drivers/auth/bearer.js'),
@@ -42,10 +34,9 @@ Vue.use(require('@websanova/vue-auth'), {
 });
 
 Vue.router.beforeEach((to, from, next) => {
-	
-	if (to.matched.some(record => record.meta.forAuth))
+	if (to.matched.some(record => record.meta.auth))
 	{
-		if (!Vue.auth.isAuthenticated())
+		if (!Vue.auth.check())
 		{
 			if (to.name !== 'login')
 			{
@@ -56,11 +47,22 @@ Vue.router.beforeEach((to, from, next) => {
 		}
 		else
 		{
-			next();
+			const user = Vue.auth.user();
+			
+			if (user.roles == 'admin' && to.name == 'home')
+			{
+				next({name: 'adminHome'});
+			}
+			else
+			{
+				next();
+			}
 		}
 	}
 	else
 	{
+		sessionStorage.removeItem('getMonitors');
+		
 		next();
 	}
 });

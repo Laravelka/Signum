@@ -33,4 +33,14 @@ function ucFirst(str) {
   return str[0].toUpperCase() + str.slice(1);
 }
 
-export { isJson, ucFirst, fullScreen, fullScreenCancel };
+function getallMethods(obj) {
+	var functionNames = [];
+	Object.getOwnPropertyNames(obj).forEach(function(property) {
+		if(typeof obj[property] === 'function') {
+			functionNames.push(property);
+		}
+	});
+	return functionNames;
+}
+
+export { getallMethods, isJson, ucFirst, fullScreen, fullScreenCancel };
