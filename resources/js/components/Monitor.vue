@@ -103,8 +103,8 @@
 								<v-btn icon :disabled="!isStream" @click="downloadImg(monitor.server + monitor.snapshot, timeNow)">
 									<v-icon>mdi-camera</v-icon>
 								</v-btn>
-								<v-btn icon :disabled="isPreload || isStream">
-									<v-icon>mdi-cloud-download</v-icon>
+								<v-btn icon :disabled="isPreload || isStream" @click="calendar.isOpen = !calendar.isOpen">
+									<v-icon>mdi-calendar</v-icon>
 								</v-btn>
 								<v-btn icon @click="fullScreen" :disabled="isPreload">
 									<v-icon>mdi-arrow-expand-all</v-icon>
@@ -150,6 +150,16 @@
 				</v-card>
 			</v-col>
 		</v-row>
+		<v-dialog v-model="calendar.isOpen">
+			<v-time-picker
+				v-model="timeNow"
+				use-seconds
+			>
+				<v-spacer></v-spacer>
+				<v-btn text @click="calendar.isOpen = false">Отмена</v-btn>
+				<v-btn text @click="calendar.isOpen = false">Открыть</v-btn>
+			</v-time-picker>
+		</v-dialog>
 	</v-container>
 </template>
 <style scoped>
@@ -269,9 +279,9 @@
 			loading: true,
 			monitor: null,
 			archive: {
-				data: false,
-				dateNow: false,
-				dateString: false,
+				data: null,
+				dateNow: null,
+				dateString: null,
 			},
 			timelineParams: {
 				range: {
@@ -286,7 +296,19 @@
 				play: false
 			},
 			timelineDisabled: true,
+			calendar: { 
+				isOpen: false,
+				time: moment().format('hh:mm:ss'),
+				date: moment().format('YYYY-MM-DD')
+			}
 		}),
+		watch: {
+			'archive.dateNow': function(newVal, oldVal) {
+				console.log(moment(newVal).format('hh:mm:ss'), moment(newVal).format('YYYY-MM-DD'))
+				/*this.isPreload = false;
+				this.isStream = false;*/
+			}	
+		},
 		created() {
 			var app = this;
 			var now = moment();
@@ -343,14 +365,6 @@
 				}
 				xhr.send();
 			},
-			updateTime() {
-				var app = this;
-				
-				setTimeout(() => {
-					app.timeNow = moment().format('LTS');
-					app.updateTime();
-				}, 250);
-			},
 			loadedData() {
 				this.loaded = true;
 				this.isPreload = false;
@@ -358,15 +372,12 @@
 				this.$refs.vid.play();
 			},
 			videoError(event) {
-				console.error(event);
+				console.error('Error: ', event);
 				
-				// this.$refs.vid.src = '';
 				this.isPreload = false; 
 				this.vidError = true;
 			},
-
 			onVideoPlay(event) {
-				//console.error(event);
 				this.srcChangedFlag = false;
 				console.log(this.isProcessing);
 				this.isProcessing = false;
@@ -379,26 +390,27 @@
 				if (this.$refs['timeline']) {
 					this.$refs['timeline'].play();
 				}
+				this.isPreload = false;
+				this.isStream = false;
 			},
 			onVideoSeeked(event) {
 				this.currentVideo.playStartTime = event.target.currentTime;
 			},
 			onVideoPause(event) {
-				console.error(event);
+				console.log('Pause: ', event);
 				
 				if (this.$refs['timeline']) {
 					this.$refs['timeline'].stop();
 				}
 			},
 			onVideoAbort(event) {
-				console.error(event);
+				console.error('Abort: ', event);
 				
 				if (this.$refs['timeline']) {
 					this.$refs['timeline'].stop();
 				}
 			},
 			onVideoTimeupdate(event) {
-
 				if (!this.onSetNewTimelineCenterFlag) {
 					if (this.currentVideo && this.currentVideo.time) {
 
@@ -421,6 +433,7 @@
 						this.archive.dateNow = currentTime;
 						this.timeNow = currentTime.format('LTS');
 						this.archive.dateString = ucFirst(currentTime.format('dddd DD-MM-YYYY'));
+						
 					} 
 				}
 			},

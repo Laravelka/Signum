@@ -47,37 +47,29 @@
 					Пока пусто...
 				</v-alert>
 			</v-col>
-			
-			<div v-if="!loading" class="pa-2 d-flex justify-center" :style="`width: 100%;`">
-				<v-btn
-					text
-					@click="updateMonitors"
-				>Обновить</v-btn>
-			</div>
 			<v-col v-if="!loading" v-for="monitor in monitors" v-bind:key="monitor.mid" cols="12" xs="12" sm="6" md="4">
 				<v-card>
-					<v-img min-height="220" aspect-ratio="16/9" :src="`${monitor.screen}?hash=${monitor.hash}`">
-							<v-row dense class="lightbox fill-height" align="end">
-								<v-col>
-									<v-btn :to="`/monitor/${monitor.mid}`" text dark>
-										<v-fade-transition v-if="true">
-											<v-avatar
-												color="red"
-												class="mb-1 v-avatar--metronome"
-												size="12"
-											></v-avatar>
-										</v-fade-transition>
-										<v-icon small color="red" left v-if="false">mdi-circle</v-icon>{{ monitor.name }}
-									</v-btn>
-								</v-col>
-							</v-row>
+					<v-img min-height="220" aspect-ratio="16/9" :src="`${monitor.screen}?hash=${monitor.hash}`" @click="$router.push('/monitor/' + monitor.mid)">
+						<v-row dense class="lightbox fill-height" align="end">
+							<v-col>
+								<v-btn :to="`/monitor/${monitor.mid}`" text dark>
+									<v-fade-transition v-if="true">
+										<v-avatar
+											color="#4CAF50"
+											class="mb-1 v-avatar--metronome"
+											size="12"
+										></v-avatar>
+									</v-fade-transition>
+									{{ monitor.name }}
+								</v-btn>
+							</v-col>
+						</v-row>
 					</v-img>
 				</v-card>
 			</v-col>
 		</v-row>
 	</v-container>
 </template>
-
 <style scoped>
 	.lightbox {
 		box-shadow: 0 0 20px inset rgba(0, 0, 0, 0.1);
@@ -120,8 +112,13 @@
 			monitors: false
 		}),
 		created() {
+			var app = this;
+			
 			this.getMonitors();
 			this.$root.$emit('active-panel', {id: 0, title: this.title});
+			this.$root.$on('clickedRefreshButton', function(data) {
+				app.updateMonitors();
+			});
 		},
 		watch: {
 			$route: 'getMonitors'

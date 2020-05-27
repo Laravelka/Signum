@@ -32,6 +32,7 @@
     "vue-resource": "^1.5.1",
     "vue-router": "^3.1.6",
     "vuetify": "^2.2.27",
+    "vuetify-datetime-picker": "^2.1.1",
     "vuetify-notify": "^1.0.6",
     "webpack": "^4.43.0",
     "workbox-webpack-plugin": "^5.1.3"

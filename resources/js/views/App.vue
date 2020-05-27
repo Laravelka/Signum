@@ -35,12 +35,20 @@
 					<v-icon>mdi-arrow-left</v-icon>
 				</v-btn>
 				<v-toolbar-title>{{ title }}</v-toolbar-title>
+				<v-spacer></v-spacer>
+				<v-btn icon @click="onRefresh">
+					<v-icon>mdi-refresh</v-icon>
+				</v-btn>
 			</v-app-bar>
 		</div>
 		<div v-else>
 			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark>
 				<v-app-bar-nav-icon @click.stop="drawer = !drawer" />
 				<v-toolbar-title>{{ title }}</v-toolbar-title>
+				<v-spacer></v-spacer>
+				<v-btn icon @click="onRefresh">
+					<v-icon>mdi-refresh</v-icon>
+				</v-btn>
 			</v-app-bar>
 		</div>
 		<v-content>
@@ -50,7 +58,7 @@
 			<v-btn :to="{name: 'home'}">
 				<v-icon>mdi-home</v-icon>
 			</v-btn>
-			<v-btn :to="{name: 'notifications'}">
+			<v-btn :to="{name: 'home'}">
 				<v-icon>mdi-bell</v-icon>
 			</v-btn>
 			<v-btn :to="{name: 'settings'}">
@@ -76,7 +84,7 @@
 			drawerLinks: {
 				user: [
 					{to: {name: 'home'}, title: 'Главная', icon: 'mdi-home'},
-					{to: {name: 'notifications'}, title: 'Уведомления', icon: 'mdi-bell'},
+					{to: {name: 'home'}, title: 'Уведомления', icon: 'mdi-bell'},
 					{to: {name: 'settings'}, title: 'Настройки', icon: 'mdi-settings'},
 					{title: 'Выход', icon: 'mdi-exit-to-app', isExit: true}
 				],
@@ -110,6 +118,9 @@
 			},
 			goBack() {
 				window.history.length > 1 ? this.$router.go(-1) : this.$router.push('/')
+			},
+			onRefresh() {
+				this.$root.$emit('clickedRefreshButton', true);
 			}
 		},
 		mounted() {

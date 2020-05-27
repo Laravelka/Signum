@@ -3,6 +3,7 @@ import axios from 'axios';
 import Vuetify from 'vuetify';
 import VueAxios from 'vue-axios'
 import VueRouter from 'vue-router';
+import DatetimePicker from 'vuetify-datetime-picker'
 
 import '@/css/style.css';
 import App from '@/js/views/App';
@@ -12,6 +13,7 @@ import {setCookie, getCookie} from '@/js/helpers/cookies';
 import timeline from '@/js/components/Timeline';
 import 'vis-timeline/dist/vis-timeline-graph2d.min.css';
 
+Vue.use(DatetimePicker);
 Vue.use(VueAxios, axios);
 Vue.component('timeline', timeline);
 
