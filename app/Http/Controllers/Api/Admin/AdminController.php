@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use Illuminate\Support\Facades\{Auth, Validator};
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\User;
@@ -27,7 +28,8 @@ class AdminController extends Controller
 		else
 		{
 			$admin = User::create(array_merge($request->all(), [
-				'roles' => 'admin'
+				'roles' => 'admin',
+				'password' => bcrypt($request->password)
 			]));
 			
 			$status = 200;

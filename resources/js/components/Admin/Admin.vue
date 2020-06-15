@@ -36,12 +36,6 @@
 	</v-container>
 	<v-container class="pa-3" v-else>
 		<v-row dense class="mb-7" align="center">
-			<div class="d-flex w-100 align-center justify-center">
-				<v-btn
-					text
-					@click="updateAdmins"
-				><v-icon left dark>mdi-refresh</v-icon> Обновить</v-btn>
-			</div>
 			<div class="d-flex w-100 mt-3 align-center justify-center">
 				<v-alert v-if="message" :type="messageType" dark dismissible :style="{'min-width': '100%'}">
 					{{ message }}
@@ -89,15 +83,18 @@
 			</v-dialog>
 			<v-col width="100%" v-if="admins">
 				<v-card tile>
-					<v-list rounded two-line>
+					<v-list two-line>
 						<v-subheader>{{ title }}</v-subheader>
 						<v-list-item-group v-model="admins">
 							<v-list-item
 								v-for="(admin, i) in admins"
 								:key="i"
+								to="/admin/admins"
 							>
 								<v-list-item-content>
-									<v-list-item-title class="d-flex justify-space-between" @click="return;">{{ admin.name }} <v-btn icon @click="deleteAdmin(admin.id)" :style="{top: '-6px', right: '-6px'}"><v-icon>mdi-delete</v-icon></v-btn></v-list-item-title>
+									<v-list-item-title class="d-flex justify-space-between" @click="return;">
+										{{ admin.name }} <v-btn icon @click="deleteAdmin(admin.id)" :style="{top: '-6px', right: '-6px'}"><v-icon>mdi-close</v-icon></v-btn>
+									</v-list-item-title>
 									<v-list-item-subtitle v-text="admin.email"></v-list-item-subtitle>
 								</v-list-item-content>
 							</v-list-item>
@@ -159,12 +156,15 @@
 			},
 		}),
 		created() {
-			console.log('Admins is created');
-			
+			var app = this;
 			this.getAdmins();
 			this.$root.$emit('active-panel', {
 				id: -1,
 				title: this.title
+			});
+			
+			this.$root.$on('clickedRefreshButton', function(data) {
+				app.updateAdmins();
 			});
 		},
 		watch: {
@@ -201,7 +201,7 @@
 				.then(response => {
 					const data = response.data;
 					
-					this.admins.push(data.user);
+					this.admins.push(data.admin);
 					sessionStorage.setItem('getAdmins', JSON.stringify(this.admins));
 					
 					app.dialogOpen = false;

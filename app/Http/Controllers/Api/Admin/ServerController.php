@@ -16,7 +16,7 @@ class ServerController extends Controller
 			'port'=> 'required|numeric|max:65535',
 			'name'=> 'required|string|max:120',
 			'super_email' => 'required|email',
-			'super_password' => 'required|min:6',
+			'super_password' => 'required|min:5',
 		], [
 			'super_email.email' => 'E-mail от админа shinobi должно быть корректным.',
 			'super_email.required' => 'E-mail от админа shinobi обязателен для заполнения.',

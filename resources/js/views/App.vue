@@ -28,6 +28,17 @@
 					</v-list-item>
 				</v-list-item-group>
 			</v-list>
+			<div class="pa-2 justify-center align-center d-flex mt-3">
+				<v-btn color="indigo" dark rounded block v-if="mobileDetect.os() == 'AndroidOS'"  href="/Signum.apk" download>
+					<v-icon>mdi-download</v-icon> Скачать
+				</v-btn>
+				<v-btn color="indigo" dark rounded block v-else-if="mobileDetect.os() == 'iOS'" @click="installApp()">
+					<v-icon>mdi-download</v-icon> Скачать
+				</v-btn>
+				<v-btn color="indigo" dark rounded block v-else @click="installApp()">
+					<v-icon>mdi-download</v-icon> Скачать
+				</v-btn>
+			</div>
 		</v-navigation-drawer>
 		<div v-if="$router.currentRoute.path !== '/' && $router.currentRoute.path !== '/admin'">
 			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark>
@@ -69,6 +80,8 @@
 </template>
 
 <script>
+	import mobileDetect from 'mobile-detect';
+	
 	export default {
 		props: {
 			source: String,
@@ -94,7 +107,9 @@
 					{to: {name: 'adminSettings'}, title: 'Настройки', icon: 'mdi-settings'},
 					{title: 'Выход', icon: 'mdi-exit-to-app', isExit: true}
 				]
-			}
+			},
+			mobileDetect: null,
+			deferredPrompt: null,
 		}),
 		watch: {
 			'$route': function(newRoute) {
@@ -105,6 +120,19 @@
 			}
 		},
 		methods: {
+			installApp() {
+				console.log('установка PWA');
+				
+				this.deferredPrompt.prompt();
+				// Wait for the user to respond to the prompt
+				this.deferredPrompt.userChoice.then((choiceResult) => {
+					if (choiceResult.outcome === 'accepted') {
+						console.log('User accepted the install prompt');
+					} else {
+						console.log('User dismissed the install prompt');
+					}
+				});
+			},
 			clickLink(data) {
 				if (data.isExit)
 				{
@@ -121,6 +149,23 @@
 			},
 			onRefresh() {
 				this.$root.$emit('clickedRefreshButton', true);
+			}
+		},
+		created() {
+			this.mobileDetect = new mobileDetect(navigator.userAgent);
+			
+			if (this.mobileDetect.os() == 'iOS' || this.mobileDetect.os() == null)
+			{
+				console.log('is pwa');
+				
+				window.addEventListener('beforeinstallprompt', (e) => {
+					// Prevent the mini-infobar from appearing on mobile
+					e.preventDefault();
+					// Stash the event so it can be triggered later.
+					this.deferredPrompt = e;
+					// Update UI notify the user they can install the PWA
+					console.log('Установи ебанное приложение', e);
+				});
 			}
 		},
 		mounted() {

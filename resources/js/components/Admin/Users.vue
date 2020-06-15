@@ -36,13 +36,6 @@
 	</v-container>
     <v-container class="pa-3" v-else>
 		<v-row dense class="mb-7" align="center">
-			<div class="d-flex w-100 align-center justify-center">
-				<v-btn
-					text
-					@click="updateUsers"
-				><v-icon left dark>mdi-refresh</v-icon> Обновить</v-btn>
-				
-			</div>
 			<div class="d-flex w-100 mt-3 align-center justify-center">
 				<v-alert v-if="message" :type="messageType" dark dismissible :style="{'min-width': '100%'}">
 					{{ message }}
@@ -116,9 +109,12 @@
 							<v-list-item
 								v-for="(user, i) in users"
 								:key="i"
+								to="/admin/users"
 							>
 								<v-list-item-content>
-									<v-list-item-title class="d-flex justify-space-between">{{ user.name }} <v-btn icon @click="deleteUser(user.id)" :style="{top: '-6px', right: '-6px'}"><v-icon>mdi-delete</v-icon></v-btn></v-list-item-title>
+									<v-list-item-title class="d-flex justify-space-between">
+										{{ user.name }} <v-btn icon @click="deleteUser(user.id)" :style="{top: '-6px', right: '-6px'}"><v-icon>mdi-close</v-icon></v-btn>
+									</v-list-item-title>
 									<v-list-item-subtitle v-text="user.email"></v-list-item-subtitle>
 								</v-list-item-content>
 							</v-list-item>
@@ -218,13 +214,15 @@
 			}
 		},
 		created() {
-			console.log('Users is created');
-			
+			var app = this;
 			this.getUsers();
 			this.getServers();
 			this.$root.$emit('active-panel', {
 				id: -1,
 				title: this.title
+			});
+			this.$root.$on('clickedRefreshButton', function(data) {
+				app.updateUsers();
 			});
 		},
 		methods: {

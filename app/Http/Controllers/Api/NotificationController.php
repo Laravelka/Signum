@@ -29,7 +29,7 @@ class NotificationController extends Controller
 		}
 	}
 	
-	public function sendToUser(Request $request)
+	public function create(Request $request)
 	{
 		$status = 200;
 		$validator = Validator::make($request->all(), [

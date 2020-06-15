@@ -36,12 +36,6 @@
 	</v-container>
     <v-container class="pa-3" v-else>
 		<v-row dense class="mb-7" align="center">
-			<div class="d-flex w-100 align-center justify-center">
-				<v-btn
-					text
-					@click="updateNotify"
-				><v-icon left dark>mdi-refresh</v-icon> Обновить</v-btn>
-			</div>
 			<div class="d-flex w-100 mt-3 align-center justify-center">
 				<v-alert v-if="message" :type="messageType" dark dismissible :style="{'min-width': '100%'}">
 					{{ message }}
@@ -76,14 +70,23 @@
 									:error-messages="messages.icon.label"
 									v-on:keyup.enter="createNotify"
 								></v-text-field>
-								<v-text-field
+								<v-select
+									:items="types"
 									label="Тип"
 									v-model="form.type"
 									:error="messages.type.state"
 									:error-messages="messages.type.label"
-									v-on:keyup.enter="createNotify"
-								></v-text-field>
+								></v-select>
+								<v-select
+									v-if="isTopic"
+									:items="topics"
+									label="Кому"
+									v-model="form.with"
+									:error="messages.with.state"
+									:error-messages="messages.with.label"
+								></v-select>
 								<v-text-field
+									v-else
 									label="Кому"
 									v-model="form.with"
 									:error="messages.with.state"
@@ -136,13 +139,29 @@
 	</v-container>
 </template>
 <script>
+	import {
+		setCookie,
+		getCookie
+	} from '@/js/helpers/cookies';
+	import { isJson } from '@/js/helpers/functions';
+	import { arrSearch, arrUnset } from '@/js/helpers/array';
+	
 	export default {
 		data: () => ({
 			error: false,
 			loading: true,
+			isTopic: false,
 			notifications: false,
 			title: 'Уведомления',
 			dialogOpen: false,
+			types: [
+				{text: 'Топик', value: 'topic'},
+				{text: 'id юзера', value: 'token'}
+			],
+			topics: [
+				{text: 'Администраторам', value: 'adminNotify'},
+				{text: 'Пользователям', value: 'userNotify'}
+			],
 			messages: {
 				message: {
 					state: false,
@@ -176,21 +195,46 @@
 			messageType: 'error'
 		}),
 		created() {
+			var app = this;
 			this.$root.$emit('active-panel', {id: 1, title: this.title});
+			
+			this.$root.$on('clickedRefreshButton', function(data) {
+				app.updateNotify();
+			});
 		},
 		mounted() {
 			var app = this;
-			
-			setTimeout(() => { 
+			this.getNotify();
+			this.$root.$emit('active-panel', {
+				id: -1,
+				title: this.title
+			});
+			this.$root.$on('clickedRefreshButton', function(data) {
+				app.updateNotify();
+			});
+		},
+		watch: {
+			'form.type': function(newVal, oldVal) {
+				console.log('type: ', newVal, oldVal)
 				
-				app.notifications = [
-					{id: 1, icon: 'https://ex-coin.space/images/push-logo.png', body: 'Тестовый текст', message: 'Заголовок'},
-					{id: 2, icon: 'https://ex-coin.space/images/push-money.png', body: 'Пора платить бабки', message: 'Неоплаченные услуги'}
-				];
-				app.loading = false;
-			}, 1000);
+				if (newVal == 'topic')
+					this.isTopic = true;
+				else
+					this.isTopic = false;
+			}
 		},
 		methods: {
+			alert(message, type = 'error', time = 3000) {
+				this.message = message;
+				this.messageType = type;
+				
+				if (time != false)
+				{
+					setTimeout(() => {
+						this.message = null;
+					}, time)
+				}
+			},
 			deleteNotify(id) {
 				console.log(id);
 				
@@ -199,22 +243,128 @@
 			updateNotify() {
 				this.loading = true;
 				
-				setTimeout(() => { 
-					this.notifications = [
-						{id: 1, icon: 'https://ex-coin.space/images/push-logo.png', body: 'Тестовый текст', message: 'Заголовок'},
-						{id: 2, icon: 'https://ex-coin.space/images/push-money.png', body: 'Пора платить бабки', message: 'Неоплаченные услуги'}
-					];
-					this.loading = false;
-				}, 1000);
+				sessionStorage.removeItem('getUsers');
+				sessionStorage.removeItem('getServers');
+				
+				this.notifications = null;
+				this.getNotify();
 			},
 			createNotify() {
+				var app = this;
 				
+				app.axios.post('admin/notify/create', this.form)
+				.then(response => {
+					const data = response.data;
+					
+					app.notifications.push(data.notify);
+					sessionStorage.setItem('getNotify', JSON.stringify(this.notifications));
+					
+					app.dialogOpen = false;
+					app.alert(data.message, 'success');
+				})
+				.catch((error) => {
+					let data = false;
+					
+					if (isJson(error.response))
+					{
+						data = JSON.parse(error.response);
+					}
+					else if (typeof error.response == 'object')
+					{
+						data = error.response.data;
+					}
+					
+					if (data.messages)
+					{
+						for( let index in data.messages)
+						{
+							app.messages[index].state = true;
+							app.messages[index].label = data.messages[index][0];
+						}
+						setTimeout(function() {
+							app.messages = {
+								name: {
+									state: false,
+									label: []
+								},
+								email: {
+									state: false,
+									label: []
+								},
+								password: {
+									state: false,
+									label: []
+								},
+								server_id: {
+									state: false,
+									label: []
+								},
+								shinobi_ke: {
+									state: false,
+									label: []
+								},
+								shinobi_password: {
+									state: false,
+									label: []
+								}
+							};
+						}, 5000);
+					}
+					else if (data.message)
+					{
+						this.dialogOpen = false;
+						this.alert(data.message);
+					}
+					else
+					{
+						this.dialogOpen = false;
+						this.error = true;
+					}
+					console.error(error);
+				});
 			},
 			getNotify() {
-				this.notifications = [
-					{id: 1, icon: 'https://ex-coin.space/images/push-logo.png', body: 'Тестовый текст', message: 'Заголовок'},
-					{id: 2, icon: 'https://ex-coin.space/images/push-money.png', body: 'Пора платить бабки', message: 'Неоплаченные услуги'}
-				];
+				var notify = sessionStorage.getItem('getNotify');
+
+				if (notify !== null) {
+					this.notifications = JSON.parse(notify);
+					this.loading = false;
+				} else {
+					this.axios.get('admin/notify/getAll')
+					.then(response => {
+						this.notifications = (response.data.notify.length < 1 ? false : response.data.notify);
+						
+						if (this.notify)
+						{
+							sessionStorage.setItem('getNotify', JSON.stringify(response.data.notify));
+						}
+						this.loading = false;
+					})
+					.catch(error => {
+						let data = false;
+						this.loading = false;
+						
+						if (isJson(error.response))
+						{
+							data = JSON.parse(error.response);
+						}
+						else if (typeof error.response == 'object')
+						{
+							data = error.response.data;
+						}
+
+						if (data.message)
+						{
+							this.dialogOpen = false;
+							this.alert(data.message, 'error', false);
+						}
+						else
+						{
+							this.error = true;
+						}
+						console.error(error);
+					});
+				}
 			}
 		}
 	}

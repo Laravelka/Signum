@@ -30,7 +30,6 @@
 				<p>
 					Зайдите чуть позже или обновите страницу
 				</p>
-				<v-btn @click="reloadPage" dark>Обновить</v-btn>
 			</v-col>
 		</v-row>
 	</v-container>
@@ -97,10 +96,10 @@
 									color="text--bold"
 									@click="playStream"
 									:disabled="isStream && isPreload"
-								>LIVE</v-btn>
+								>{{ error ? 'Перезапустить' : 'LIVE' }}</v-btn>
 							</v-col>
 							<v-col cols="6" class="d-flex justify-end">
-								<v-btn icon :disabled="!isStream" @click="downloadImg(monitor.server + monitor.snapshot, timeNow)">
+								<v-btn icon :disabled="isPreload" @click="snapshot(isStream)">
 									<v-icon>mdi-camera</v-icon>
 								</v-btn>
 								<v-btn icon :disabled="isPreload || isStream" @click="calendar.isOpen = !calendar.isOpen">
@@ -176,25 +175,25 @@
 	
 	#stream {
 		width: 100%;
-		height: 210px;
+		height: 220px;
 		overflow: hidden;
 	}
 	
 	@media (max-width: 600px) {
 		#stream {
-			height: 230px!important;
+			height: 240px!important;
 		}
 	}
 	
 	@media (min-width: 600px) and (max-width: 960px) {
 		#stream {
-			height: 400px!important;
+			height: 410px!important;
 		}
 	}
 	
 	@media (min-width: 960px) {
 		#stream {
-			height: 470px!important;
+			height: 500px!important;
 		}
 	}
 	
@@ -320,6 +319,9 @@
 			app.$root.$on('setVideosLabels', (e) => {
 				app.timelineDisabled = false;
 			});
+			app.$root.$on('clickedRefreshButton', function(data) {
+				app.reloadPage();
+			});
 			this.changeVideoDateThottled = _.debounce(this.changeVideoDate, 500); // Ограничиеваем вызов раз в 500 мс
 			this.changeArchiveTimeStringThottled =  _.throttle(this.changeArchiveTimeString, 200)
 		},
@@ -356,6 +358,16 @@
 
 		},
 		methods: {
+			snapshot(isStream) {
+				if (isStream)
+				{
+					this.downloadImg(this.monitor.server + this.monitor.snapshot, this.timeNow);
+				}
+				else
+				{
+					this.downloadImg(this.monitor.server + this.monitor.snapshot + '?time=' + moment(this.archive.dateNow).valueOf(), this.timeNow);
+				}
+			},
 			downloadImg(url, name) {
 				var xhr = new XMLHttpRequest();
 				xhr.open("GET", url, true);

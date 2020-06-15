@@ -8,7 +8,7 @@
 		<title>Signum.video</title>
 		<link href="/manifest.json" rel="manifest">
 		<!-- Fonts -->
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vuetify/2.1.1/vuetify.min.css" integrity="sha256-8lXpjKSi0rhttg2cIQGJOhWdN+hVAmW8MmXm70BjjVc=" crossorigin="anonymous" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vuetify/2.3.0-beta.7/vuetify.min.css" />
 		<link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
 		<link href="{{ mix('css/app.css') }}" rel="stylesheet">
 		
@@ -19,9 +19,22 @@
 		<link href="/image/apple_splash_1125.png" sizes="1125x2436" rel="apple-touch-startup-image" />
 		<link href="/image/apple_splash_1242.png" sizes="1242x2208" rel="apple-touch-startup-image" />
 		<link href="/image/apple_splash_750.png" sizes="750x1334" rel="apple-touch-startup-image" />
-		<link href="/image/apple_splash_640.png" sizes="640x1136" rel="apple-touch-startup-image" /> 
+		<link href="/image/apple_splash_640.png" sizes="640x1136" rel="apple-touch-startup-image" />
+		<style>
+			.buttonInstall {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				width: 100%;
+				padding: 8px;
+			}
+		</style>
 	</head>
 	<body>
+		<noscript>
+			This application needs JavaScript to work, please enable JavaScript on your browser.
+			Это приложение не работает без JavaScript, пожалуйста включите его.
+		</noscript>
 		<div id="app"></div>
 		<script src="{{ mix('js/app.js') }}"></script>
 		<script src="https://www.gstatic.com/firebasejs/7.12.0/firebase-app.js"></script>
@@ -59,6 +72,8 @@
 					
 					navigator.serviceWorker.register('/firebase-messaging-sw.js', {scope: "/"})
 					.then(async(reg) => {
+						console.log(reg);
+						
 						if (reg.active)
 						{
 							var firebaseConfig = {
@@ -104,16 +119,43 @@
 							messaging.onMessage(function(payload){
 							  console.log('onMessage:', payload);
 							});
-							
-							/*
-							navigator.serviceWorker.ready.then(async function(reg) {
-								console.log('ready: ', reg);
-
-								
-							});*/
 						}
 					});
 				}
+				/*
+				let deferredPrompt;
+				let buttonInstall = document.getElementById('buttonInstall');
+				
+				window.addEventListener('beforeinstallprompt', (e) => {
+					// Prevent the mini-infobar from appearing on mobile
+					e.preventDefault();
+					// Stash the event so it can be triggered later.
+					deferredPrompt = e;
+					// Update UI notify the user they can install the PWA
+					showInstallPromotion();
+				});
+				
+				buttonInstall.onclick = function(e) {
+					console.log(e);
+					// Hide the app provided install promotion
+					console.log('hideMyInstallPromotion() ');
+					// Show the install prompt
+					deferredPrompt.prompt();
+					// Wait for the user to respond to the prompt
+					deferredPrompt.userChoice.then((choiceResult) => {
+						if (choiceResult.outcome === 'accepted') {
+							console.log('User accepted the install prompt');
+						} else {
+							console.log('User dismissed the install prompt');
+						}
+					});
+				};
+				*/
+				
+				window.addEventListener('appinstalled', (evt) => {
+					// Log install to analytics
+					console.log('INSTALL: Success', evt);
+				});
 			});
 		</script>
 	</body>

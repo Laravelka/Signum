@@ -36,12 +36,6 @@
 	</v-container>
 	<v-container class="pa-3" v-else-if="!loading">
 		<v-row dense class="mb-7" align="center">
-			<div class="d-flex w-100 align-center justify-center">
-				<v-btn
-					text
-					@click="updateServers"
-				><v-icon left dark>mdi-refresh</v-icon> Обновить</v-btn>
-			</div>
 			<div class="d-flex w-100 mt-3 align-center justify-center">
 				<v-alert v-if="message" :type="messageType" dark dismissible :style="{'min-width': '100%'}">
 					{{ message }}
@@ -103,20 +97,20 @@
 			</v-dialog>
 			<v-col width="100%" v-if="servers">
 				<v-card tile>
-					<v-list rounded two-line>
+					<v-list two-line>
 						<v-subheader>{{ title }}</v-subheader>
 						<v-list-item-group v-model="servers">
 							<v-list-item
 								v-for="(server, i) in servers"
 								:key="i"
-								@click=""
+								to="/admin/servers"
 							>
 								<v-list-item-content>
 									<v-list-item-title v-text="server.name"></v-list-item-title>
 									<v-list-item-subtitle v-text="'http://' + server.ip"></v-list-item-subtitle>
 								</v-list-item-content>
 								<v-list-item-icon @click="log(server, i)">
-									<v-icon>mdi-delete</v-icon>
+									<v-icon>mdi-close</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 						</v-list-item-group>
@@ -187,12 +181,14 @@
 			},
 		}),
 		created() {
-			console.log('Servers is created');
-			
+			var app = this;
 			this.getServers();
 			this.$root.$emit('active-panel', {
 				id: -1,
 				title: this.title
+			});
+			this.$root.$on('clickedRefreshButton', function(data) {
+				app.updateServers();
 			});
 		},
 		watch: {
@@ -232,8 +228,6 @@
 				
 				this.axios.post('admin/servers/create', data)
 				.then(response => {
-					console.log(response);
-					
 					app.message = response.data.message;
 					app.dialogOpen = false;
 					app.messageType = 'success';

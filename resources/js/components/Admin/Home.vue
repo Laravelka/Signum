@@ -40,11 +40,12 @@
 			],
 		}),
 		created() {
-			console.log('Admin Home is created');
-			
 			this.$root.$emit('active-panel', {
 				id: 0,
 				title: this.title
+			});
+			this.$root.$on('clickedRefreshButton', function(data) {
+				location.reload();
 			});
 		}
 	}

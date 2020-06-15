@@ -47,8 +47,8 @@ Route::middleware('jwt.auth')->group(function() {
 	
 	Route::prefix('admin')->middleware('role:admin')->group(function() {
 		Route::prefix('notify')->group(function() {
-			Route::get('send', 'Api\NotificationController@send');
-			Route::get('sendToUser', 'Api\NotificationController@sendToUser');
+			Route::post('create', 'Api\NotificationController@create');
+			Route::get('getAll', 'Api\NotificationController@getAll');
 		});
 		
 		Route::prefix('users')->group(function() {

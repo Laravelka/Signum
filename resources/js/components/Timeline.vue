@@ -1,10 +1,6 @@
 <template>
-	<div id='visualization' ref="visualization" style="height: 60px; width: 100%;" @wheel="onWhell" v-bind:class="{dark: $vuetify.theme.dark}"></div>
+	<div id='visualization' ref="visualization" style="width: 100%;" @wheel="onWhell" v-bind:class="{dark: $vuetify.theme.dark}"></div>
 </template>
-
-<style>
-</style>
-
 <script>
 	import { ucFirst, fullScreen, fullScreenCancel } from '@/js/helpers/functions';
 	import moment from 'moment';
@@ -64,6 +60,7 @@
 						end: end,
 						type: type,
 						style: style,
+						selectable: true,
 					});
 				});
 
@@ -77,6 +74,7 @@
 						end: end,
 						type: type,
 						style: style,
+						selectable: true,
 					});
 				});
 				var itemsSet = new DataSet(items);
@@ -97,7 +95,6 @@
 		mounted(argument) {
 			var container = this.$refs["visualization"];
 			
-			console.log(this.params.downloadeditem);
 			if (this.params.downloadeditem) {
 				var items = new DataSet([this.params.downloadeditem]);
 			} else {
@@ -143,18 +140,21 @@
 				this.timelineinstance.setCustomTime(average, "custome-type-center")
 
 				if (properties.byUser) {
-					console.log('byUser');
-
 					this.$emit('pauseOnTimelineMove');
 					this.params.play = "false";
 					this.$emit('setNewTimelineCenter');
 				}
-
 			});
-
+			
+			this.timelineinstance.on('click', (properties) => {
+				// console.log('clicked: ', properties);
+			});
+			
+			this.timelineinstance.on('select', (properties) => {
+				console.log('selected: ', properties);
+			});
 		},
-		created: function () {
-			console.log("timeline created");
+		created() {
 		},
 		watch: {
 			'params.downloadeditem': function() {
