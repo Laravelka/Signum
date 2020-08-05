@@ -104,6 +104,9 @@
 								</v-btn>
 							</v-col>
 							<v-col cols="6" class="d-flex justify-end">
+								<v-btn icon :disabled="isStream || isPreload || vidError || timelineDisabled" @click="downloadCurrentVideo">
+									<v-icon>mdi-cloud-download</v-icon>
+								</v-btn>
 								<v-btn icon v-if="!isPlay" :disabled="isPreload || vidError || timelineDisabled" @click="playVideo()">
 									<v-icon>mdi-play</v-icon>
 								</v-btn>
@@ -120,19 +123,6 @@
 							</v-col>
 						</v-row>
 					</v-card-title>
-					<v-card-text>
-						<v-row justify="center" align="center">
-							<v-col cols="12" justify="center" align="center">
-								<v-btn 
-									small
-									elevation="0"
-									color="text--bold"
-									@click="downloadCurrentVideo"
-									:disabled="isStream || isPreload"
-								>Скачать</v-btn>
-							</v-col>
-						</v-row>
-					</v-card-text>
 					<v-card-actions class="flex-column justify-center align-items-center">
 						<v-row class="d-flex justify-center">
 							<div
