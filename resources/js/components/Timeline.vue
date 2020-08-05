@@ -2,11 +2,11 @@
 	<div id='visualization' ref="visualization" style="width: 100%;" @wheel="onWhell" v-bind:class="{dark: $vuetify.theme.dark}"></div>
 </template>
 <script>
-	import { ucFirst, fullScreen, fullScreenCancel } from '@/js/helpers/functions';
 	import moment from 'moment';
 	import download from 'downloadjs';
-
-	import { DataSet, Timeline } from 'vis-timeline/dist/vis-timeline-graph2d.esm.js';
+	import { DataSet } from "vis-data/peer";
+	import { Timeline } from "vis-timeline/peer";
+	import { ucFirst, fullScreen, fullScreenCancel } from '@/js/helpers/functions';
 
 	moment.locale('ru');
 	
@@ -81,7 +81,7 @@
 				
 				this.timelineinstance.setItems(itemsSet);
 				
-				this.$root.$emit('setVideosLabels', true);
+				this.$root.$emit('setVideosLabels', items);
 			},
 			play:function() {
 				this.params.play = true;
@@ -110,10 +110,6 @@
 				}
 
 			}
-
-			// Не осилил в красоту. Изначально отображается синяя полоска по центру и с двух сторон по бокам по 1 дня.
-			// var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(2, 'day');
-			// var end = moment((this.params.range.min + this.params.range.max) / 2).add(2, 'day');
 			var start = moment((this.params.range.min + this.params.range.max) / 2).subtract(1, 'hours');
 			var end = moment((this.params.range.min + this.params.range.max) / 2).add(1, 'hours');
 
@@ -122,7 +118,8 @@
 				max: this.params.range.max,
 				start: start,
 				end: end,
-				zoomMin: 10000, // Вся полоска отображает минимально ширину в 5 секунд, ближе не приблизить
+				zoomMin: 10000,
+				zoomMax: 216000000,
 				showCurrentTime: false,
 			};
 			this.timelineinstance = new Timeline(container, items, options);
@@ -144,14 +141,6 @@
 					this.params.play = "false";
 					this.$emit('setNewTimelineCenter');
 				}
-			});
-			
-			this.timelineinstance.on('click', (properties) => {
-				// console.log('clicked: ', properties);
-			});
-			
-			this.timelineinstance.on('select', (properties) => {
-				console.log('selected: ', properties);
 			});
 		},
 		created() {

@@ -2,6 +2,7 @@
 	<v-app id="inspire">
 		<v-navigation-drawer
 			app
+			touchless
 			v-model="drawer"
 			v-if="$auth.ready() && $auth.check()"
 		>
@@ -33,15 +34,15 @@
 					<v-icon>mdi-download</v-icon> Скачать
 				</v-btn>
 				<v-btn color="indigo" dark rounded block v-else-if="mobileDetect.os() == 'iOS'" @click="installApp()">
-					<v-icon>mdi-download</v-icon> Скачать
+					<v-icon>mdi-download</v-icon> Установить
 				</v-btn>
 				<v-btn color="indigo" dark rounded block v-else @click="installApp()">
-					<v-icon>mdi-download</v-icon> Скачать
+					<v-icon>mdi-download</v-icon> Установить
 				</v-btn>
 			</div>
 		</v-navigation-drawer>
 		<div v-if="$router.currentRoute.path !== '/' && $router.currentRoute.path !== '/admin'">
-			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark>
+			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark color="indigo">
 				<v-btn icon @click="goBack">
 					<v-icon>mdi-arrow-left</v-icon>
 				</v-btn>
@@ -53,7 +54,7 @@
 			</v-app-bar>
 		</div>
 		<div v-else>
-			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark>
+			<v-app-bar v-if="$auth.check() && !hide.appBar" app dark color="indigo">
 				<v-app-bar-nav-icon @click.stop="drawer = !drawer" />
 				<v-toolbar-title>{{ title }}</v-toolbar-title>
 				<v-spacer></v-spacer>
@@ -62,9 +63,9 @@
 				</v-btn>
 			</v-app-bar>
 		</div>
-		<v-content>
+		<v-main>
 			<router-view></router-view>
-		</v-content>
+		</v-main>
 		<v-bottom-navigation v-if="$auth.check() && !hide.bottomNavigation && $auth.user().roles != 'admin'"  :value="activeBtn" grow hide-on-scroll fixed app>
 			<v-btn :to="{name: 'home'}">
 				<v-icon>mdi-home</v-icon>

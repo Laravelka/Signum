@@ -4,6 +4,7 @@
 		fill-height
 		style="height: calc(100vh - 100px);" 
 		v-if="loading"
+		fluid
 	>
 		<v-row align="center">
 			<v-col class="loading" align="center">
@@ -33,18 +34,18 @@
 			</v-col>
 		</v-row>
 	</v-container>
-	<v-container v-else>
+	<v-container v-else fluid>
 		<v-row justify="center">
 			<v-col xs="12" lg="12" xl="12">
-				<v-card raised elevation="5" :style="{'margin-top': '80px'}">
+				<v-card raised elevation="4">
 					<div
 						id="stream"
 						class="is_overlay"
 					>
-						<div class="priview" v-if="isPreload">
+						<div class="priview" v-if="isPreload && !vidError">
 							<v-progress-circular indeterminate color="white"></v-progress-circular>
 						</div>
-						<div class="priview" v-else-if="isProcessing">
+						<div class="priview" v-else-if="isProcessing && !vidError">
 							<v-progress-circular size="50" :color="progressColor" :value="preparationPercentage"
 								v-if="preparationPercentage !== undefined && preparationPercentage !== null"
 							>
@@ -53,7 +54,7 @@
 							<v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
 						</div>
 						<div
-							v-if="vidError"
+							v-else-if="vidError && !isProcessing && !isPlay"
 							class="errorBlock"
 						>
 							<v-row align="center">
@@ -68,15 +69,15 @@
 							</v-row>
 						</div>
 						<video
-							v-else
+							v-show="!vidError"
 							ref="vid"
-							id="video"
-							autoplay="true"
-							muted="muted"
-							style="display: none;"
-							preload="none"
 							:title="monitor.name"
 							:src="videoSrc"
+							webkit-playsinline
+							playsinline
+							autoplay
+							muted
+							style="object-fit: cover!important; width: 100%; height: auto; max-height: 100%;;"
 							v-on:loadeddata="loadedData"
 							v-on:error="videoError"
 							v-on:ended="onVideoEnded"
@@ -90,28 +91,49 @@
 					<v-card-title>
 						<v-row justify="space-between">
 							<v-col cols="6">
-								<v-btn 
+								<v-btn
+									icon
 									small
 									elevation="0"
 									color="text--bold"
 									@click="playStream"
 									:disabled="isStream && isPreload"
-								>{{ error ? 'Перезапустить' : 'LIVE' }}</v-btn>
+								>
+									<v-img v-if="isStream" height="24" width="24" src="/images/live.png"></v-img>
+									<v-icon v-else>mdi-refresh</v-icon>
+								</v-btn>
 							</v-col>
 							<v-col cols="6" class="d-flex justify-end">
+								<v-btn icon v-if="!isPlay" :disabled="isPreload || vidError || timelineDisabled" @click="playVideo()">
+									<v-icon>mdi-play</v-icon>
+								</v-btn>
+								<v-btn icon v-else :disabled="isPreload || vidError || timelineDisabled" @click="pauseVideo()">
+									<v-icon>mdi-pause</v-icon>
+								</v-btn>
 								<v-btn icon :disabled="isPreload" @click="snapshot(isStream)">
 									<v-icon>mdi-camera</v-icon>
 								</v-btn>
-								<v-btn icon :disabled="isPreload || isStream" @click="calendar.isOpen = !calendar.isOpen">
-									<v-icon>mdi-calendar</v-icon>
-								</v-btn>
+								<v-datetime :disabled="isPreload || timelineDisabled" v-model="timeNowCalendar"></v-datetime>
 								<v-btn icon @click="fullScreen" :disabled="isPreload">
 									<v-icon>mdi-arrow-expand-all</v-icon>
 								</v-btn>
 							</v-col>
 						</v-row>
 					</v-card-title>
-					<v-card-actions class="flex-column justify-center align-items-center" :style="{'margin-top': '50px'}">
+					<v-card-text>
+						<v-row justify="center" align="center">
+							<v-col cols="12" justify="center" align="center">
+								<v-btn 
+									small
+									elevation="0"
+									color="text--bold"
+									@click="downloadCurrentVideo"
+									:disabled="isStream || isPreload"
+								>Скачать</v-btn>
+							</v-col>
+						</v-row>
+					</v-card-text>
+					<v-card-actions class="flex-column justify-center align-items-center">
 						<v-row class="d-flex justify-center">
 							<div
 								class="d-flex"
@@ -131,6 +153,9 @@
 						</v-row>
 						<v-row :style="{position: 'relative', width: '100%'}">
 							<div class="load-timeline" v-if="timelineDisabled">
+								Архив пуст
+							</div>
+							<div class="load-timeline" v-else-if="timelineLoader">
 								<v-progress-circular
 									:size="30"
 									:width="3"
@@ -149,34 +174,30 @@
 				</v-card>
 			</v-col>
 		</v-row>
-		<v-dialog v-model="calendar.isOpen">
-			<v-time-picker
-				v-model="timeNow"
-				use-seconds
-			>
-				<v-spacer></v-spacer>
-				<v-btn text @click="calendar.isOpen = false">Отмена</v-btn>
-				<v-btn text @click="calendar.isOpen = false">Открыть</v-btn>
-			</v-time-picker>
-		</v-dialog>
 	</v-container>
 </template>
 <style scoped>
 	.load-timeline {
 		display: flex;
 		align-items: center;
-    	justify-content: center;
+		justify-content: center;
 		position: absolute;
 		background: rgba(0, 0, 0, 0.3);
 		min-height: 61px;
 		width: 100%;
 		z-index: 2;
 	}
-	
+
 	#stream {
 		width: 100%;
-		height: 220px;
+		height: 240px;
 		overflow: hidden;
+	}
+	
+	@media (max-width: 360px) {
+		#stream {
+			height: 200px!important;
+		}
 	}
 	
 	@media (max-width: 600px) {
@@ -184,42 +205,54 @@
 			height: 240px!important;
 		}
 	}
-	
+
 	@media (min-width: 600px) and (max-width: 960px) {
 		#stream {
-			height: 410px!important;
+			height: 420px!important;
+		}
+	}
+
+	@media (min-width: 960px) {
+		#stream {
+			height: 520px!important;
 		}
 	}
 	
-	@media (min-width: 960px) {
+	@media (min-width: 1280px) {
 		#stream {
-			height: 500px!important;
+			height: 523px!important;
+		}
+	}
+	
+	@media (min-width: 1920px) {
+		#stream {
+			height: 1000px!important;
 		}
 	}
 	
 	.darkening {
 		background: rgba(0, 0, 0, 0.3);
 	}
-	
-	.is_overlay { 
-		display: block; 
-		width: 100%; 
-		height: 100%; 
+
+	.is_overlay {
+		display: block;
+		width: 100%;
+		height: 100%;
 	}
-	
+
 	#stream {
 		position: relative;
 	}
-	
-	#stream > #video {
+
+	#stream>#video {
 		position: absolute;
 		top: 0;
 		left: 0;
-		width: 100%; 
+		width: 100%;
 		height: 100%;
 		object-fit: unset;
 	}
-	
+
 	.priview {
 		background: rgba(0, 0, 0, 0.3);
 		z-index: 1;
@@ -230,7 +263,7 @@
 		align-items: center;
 		justify-content: center;
 	}
-	
+
 	.errorBlock {
 		background: rgba(0, 0, 0, 0.3);
 		position: absolute;
@@ -240,7 +273,7 @@
 		align-items: center;
 		justify-content: center;
 	}
-	
+
 	.timeline-bottom {
 		position: absolute;
 		bottom: 0;
@@ -248,16 +281,20 @@
 		left: 0;
 		border-radius: 0;
 	}
-
 </style>
 <script>
-	import { ucFirst, fullScreen, fullScreenCancel } from '@/js/helpers/functions';
+	import {
+		ucFirst,
+		fullScreen,
+		fullScreenCancel
+	} from '@/js/helpers/functions';
 	import moment from 'moment';
 	import lodash from 'lodash';
 	import download from 'downloadjs';
-	
+	import mobileDetect from 'mobile-detect';
+
 	moment.locale('ru');
-	
+
 	export default {
 		data: () => ({
 			server: "",
@@ -271,6 +308,7 @@
 			error: false,
 			vidError: false,
 			loaded: false,
+			isPlay: false,
 			isStream: false,
 			isPreload: true,
 			isProcessing: false,
@@ -285,95 +323,137 @@
 			timelineParams: {
 				range: {
 					min: moment().subtract(7, 'day'),
-					max: moment().add(7, 'day'),
+					max: moment().add(1, 'day'),
 				},
-				downloadeditem: null, 
-				// center: moment().format(moment.HTML5_FMT.DATETIME_LOCAL_SECONDS),
-				// average: moment(),
+				downloadeditem: null,
 				center: null,
 				average: null,
 				play: false
 			},
-			timelineDisabled: true,
-			calendar: { 
+			timelineLoader: true,
+			timelineDisabled: false,
+			calendar: {
 				isOpen: false,
 				time: moment().format('hh:mm:ss'),
 				date: moment().format('YYYY-MM-DD')
-			}
+			},
+			mobileDetect: null,
+			timeNowCalendar: null,
 		}),
-		watch: {
-			'archive.dateNow': function(newVal, oldVal) {
-				console.log(moment(newVal).format('hh:mm:ss'), moment(newVal).format('YYYY-MM-DD'))
-				/*this.isPreload = false;
-				this.isStream = false;*/
-			}	
-		},
 		created() {
 			var app = this;
 			var now = moment();
-			
-			app.archive.dateNow = now;
-			app.archive.dateString = ucFirst(now.format('dddd DD-MM-YYYY'));
-			
-			app.$root.$emit('hide-object', ['bottomNavigation']);
-			app.$root.$on('setVideosLabels', (e) => {
-				app.timelineDisabled = false;
+
+			this.archive.dateNow = now;
+			this.archive.dateString = ucFirst(now.format('dddd DD-MM-YYYY'));
+
+			this.mobileDetect = new mobileDetect(navigator.userAgent);
+
+			this.$root.$emit('hide-object', ['bottomNavigation']);
+			this.$root.$on('setVideosLabels', (items) => {
+				app.timelineLoader = false;
+
+				if (items[0].start) {
+					app.moveTimelineTo(moment(items[0].start));
+				}
 			});
-			app.$root.$on('clickedRefreshButton', function(data) {
+
+			this.$root.$on('clickedRefreshButton', function(data) {
 				app.reloadPage();
 			});
+
+			this.$root.$on('okCalendar', function(data) {
+				const date = moment(new Date(data.join('T')));
+
+				app.moveTimelineTo(date);
+				app.archive.dateNow = date;
+				app.archive.dateString = ucFirst(date.format('dddd DD-MM-YYYY'));
+				app.changeVideoDate(date);
+
+				console.log(app.currentVideo);
+			});
+
 			this.changeVideoDateThottled = _.debounce(this.changeVideoDate, 500); // Ограничиеваем вызов раз в 500 мс
-			this.changeArchiveTimeStringThottled =  _.throttle(this.changeArchiveTimeString, 200)
+			this.changeArchiveTimeStringThottled = _.throttle(this.changeArchiveTimeString, 200)
 		},
 		mounted() {
 			var app = this;
-			
-			app.axios.post('/monitors/get', {id: app.$route.params.id})
-			.then(response => {
-				app.loading = false;
-				app.monitor = response.data;
-				app.title = app.monitor.name;
-				app.isStream = true;
-				app.videoSrc = app.monitor.server + app.monitor.streams[0];
-				app.$root.$emit('active-panel', {id: -1, title: app.title});
-				
-				app.axios.post('/videos/getByMonitor', {monitor_id: app.monitor.mid})
+
+			this.axios.post('/monitors/get', {
+					id: app.$route.params.id
+				})
 				.then(response => {
-					this.$refs['timeline'].setVideosLabels(response.data.response.videos);
+					app.loading = false;
+					app.monitor = response.data;
+					app.title = app.monitor.name;
+					app.isStream = true;
+
+					if (app.mobileDetect.os() == 'iOS') {
+						app.videoSrc = app.monitor.server + app.monitor.streams[0].replace(/cam(\d+)\/s.mp4/ui, 'cam$1hls\/s.m3u8').replace(/mp4/ui, 'hls');
+					} else {
+						app.videoSrc = app.monitor.server + app.monitor.streams[0];
+					}
+
+					app.$root.$emit('active-panel', {
+						id: -1,
+						title: app.title
+					});
+
+					app.axios.post('/videos/getByMonitor', {
+							monitor_id: app.monitor.mid
+						})
+						.then(response => {
+							const data = response.data;
+
+							if (data.total < 1) {
+								this.timelineDisabled = true;
+							}
+							this.$refs['timeline'].setVideosLabels(data.videos);
+						})
+						.catch(error => {
+							app.error = true;
+							app.loading = false;
+
+							console.error('Ошибка получения видео: ', error);
+						});
+
 				})
 				.catch(error => {
 					app.error = true;
 					app.loading = false;
-					
-					console.error('Ошибка получения видео: ', error);
+
+					console.error('Ошибка получения камеры: ', error);
 				});
-				
-			})
-			.catch(error => {
-				app.error = true;
-				app.loading = false;
-				
-				console.error('Ошибка получения камеры: ', error);
-			});
 
 		},
 		methods: {
+			downloadCurrentVideo() {
+				var xhr = new XMLHttpRequest();
+				xhr.open("GET", this.monitor.server + this.currentVideo.href, true);
+				xhr.responseType = 'blob';
+				xhr.onwload = function(e) {
+					download(xhr.response, this.currentVideo.href.split('/')[5], "video/mp4");
+				}
+				xhr.send();
+			},
+			playVideo() {
+				this.vidError = false;
+				this.$refs['vid'].play();
+				this.isPlay = true;
+			},
+			pauseVideo() {
+				this.isPlay = false;
+				this.$refs['vid'].pause();
+			},
 			snapshot(isStream) {
-				if (isStream)
-				{
-					this.downloadImg(this.monitor.server + this.monitor.snapshot, this.timeNow);
-				}
-				else
-				{
-					this.downloadImg(this.monitor.server + this.monitor.snapshot + '?time=' + moment(this.archive.dateNow).valueOf(), this.timeNow);
-				}
+				this.downloadImg(this.monitor.server + this.monitor.snapshot, this.timeNow);
 			},
 			downloadImg(url, name) {
 				var xhr = new XMLHttpRequest();
 				xhr.open("GET", url, true);
 				xhr.responseType = 'blob';
 				xhr.onload = function(e) {
-					download(xhr.response, name + ".jpg", "image/jpeg" );
+					download(xhr.response, name + ".jpg", "image/jpeg");
 				}
 				xhr.send();
 			},
@@ -385,16 +465,17 @@
 			},
 			videoError(event) {
 				console.error('Error: ', event);
-				
-				this.isPreload = false; 
+
+				this.isPreload = false;
 				this.vidError = true;
+				this.isPlay = false;
 			},
 			onVideoPlay(event) {
 				this.srcChangedFlag = false;
 				console.log(this.isProcessing);
 				this.isProcessing = false;
 				this.preparationPercentage = 0;
-				// Хранит время воспроизведения, чтобы можно было определить когда оно 
+
 				if (this.currentVideo.playStartTime === undefined) {
 					this.currentVideo.playStartTime = event.target.currentTime;
 				}
@@ -404,25 +485,31 @@
 				}
 				this.isPreload = false;
 				this.isStream = false;
+				this.isPlay = true;
 			},
 			onVideoSeeked(event) {
 				this.currentVideo.playStartTime = event.target.currentTime;
 			},
 			onVideoPause(event) {
 				console.log('Pause: ', event);
-				
+
+				this.isPlay = false;
+
 				if (this.$refs['timeline']) {
 					this.$refs['timeline'].stop();
 				}
 			},
 			onVideoAbort(event) {
 				console.error('Abort: ', event);
-				
+
 				if (this.$refs['timeline']) {
 					this.$refs['timeline'].stop();
 				}
+				this.isPlay = false;
 			},
 			onVideoTimeupdate(event) {
+				// this.isPlay = true;
+
 				if (!this.onSetNewTimelineCenterFlag) {
 					if (this.currentVideo && this.currentVideo.time) {
 
@@ -436,88 +523,61 @@
 							}
 						}
 
-						this.log('Время обновилось: ' + event.target.currentTime);
+						// this.log('Время обновилось: ' + event.target.currentTime);
 						var currentTime = moment(this.currentVideo.time).add(event.target.currentTime / 1000, 'seconds');
 						currentTime.local();
 						currentTime = currentTime.add(event.target.currentTime, 'seconds');
-						this.log('Время обновилось: ' + currentTime.toString());
+						// this.log('Время обновилось: ' + currentTime.toString(), currentTime);
 						this.moveTimelineTo(currentTime);
 						this.archive.dateNow = currentTime;
 						this.timeNow = currentTime.format('LTS');
+
 						this.archive.dateString = ucFirst(currentTime.format('dddd DD-MM-YYYY'));
-						
-					} 
+					}
 				}
 			},
 			onVideoEnded() {
 				var app = this;
-
 				var index = this.videos.indexOf(this.currentVideo);
 				if (index !== -1 && index !== 0) {
 					if (this.videos[index - 1]) {
 						this.currentVideo = this.videos[index - 1];
 						var match = this.server.match(/^(?:(https|http):\/\/)?([^:\/\\]+(?::\d{1,5})?)$/);
-						var newSrc = `/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(this.currentVideo.href)}`;
+						var newSrc = `${window.baseUrl}/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(this.currentVideo.href)}`;
 						if (app.videoSrc != newSrc) {
 							this.changeVideoSrc(newSrc);
-							//app.videoSrc = newSrc;
 						}
 						this.$refs.vid.load();
 					}
-
 				}
-
+				this.isPlay = false;
 			},
 			onPauseOnTimelineMove() {
 				this.$refs.vid.pause();
 			},
 			playStream() {
-				this.videoSrc = this.monitor.server + this.monitor.streams[0];
+				if (this.mobileDetect.os() == 'iOS') {
+					this.videoSrc = this.monitor.server + this.monitor.streams[0].replace(/cam(\d+)\/s.mp4/ui, 'cam$1hls\/s.m3u8').replace(/mp4/ui, 'hls');
+				} else {
+					this.videoSrc = this.monitor.server + this.monitor.streams[0];
+				}
 				this.isStream = true;
 				this.isPreload = true;
 				this.vidError = false;
 			},
-			nextData() {
-				var newDate = moment(this.archive.dateNow).add(1, 'days');
-				
-				if (moment(moment()).isBefore(newDate)) return;
-				
-				this.isStream = false;
-				this.archive.dateNow = newDate;
-				this.archive.dateString = ucFirst(
-					newDate.
-					format('dddd DD-MM-YYYY')
-				);
-			},
-			prevData() {
-				var newDate = moment(this.archive.dateNow).subtract(1, 'days');
-				
-				this.isStream = false;
-				this.archive.dateNow = newDate;
-				this.archive.dateString = ucFirst(
-					newDate.
-					format('dddd DD-MM-YYYY')
-				);
-			},
-
 			fullScreen() {
 				fullScreen(this.$refs.vid);
 			},
 			reloadPage() {
 				location.reload();
 			},
-			onSetNewTimelineCenter: function () {
+			onSetNewTimelineCenter: function() {
 
 				this.onSetNewTimelineCenterFlag = true;
 				this.changeVideoDateThottled(this.timelineParams.center);
 
 				if (this.timelineParams.center) {
-
 					this.changeArchiveTimeStringThottled(this.timelineParams.center);
-					// var time = moment(this.timelineParams.center);
-					// this.archive.dateNow = time;
-					// this.timeNow = time.format('LTS');
-					// this.archive.dateString = ucFirst(time.format('dddd DD-MM-YYYY'));
 				}
 			},
 			changeVideoSrc(newSrc) {
@@ -530,16 +590,16 @@
 			},
 			updatePreparationPercentage() {
 				var match = this.server.match(/^(?:(https|http):\/\/)?([^:\/\\]+(?::\d{1,5})?)$/);
-				var src = `https://ex-coin.space/get_video/prepare/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(this.currentVideo.href)}`;
+				var src = `${window.baseUrl}/get_video/prepare/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(this.currentVideo.href)}`;
 
 				this.axios.get(src, {})
-				.then(response => {
-					this.preparationPercentage = response.data.preparationPercentage.toFixed();
-					// debugger;
-					if (this.isProcessing) {
-						this.updatePreparationPercentage();
-					}
-				});
+					.then(response => {
+						this.preparationPercentage = response.data.preparationPercentage.toFixed();
+
+						if (this.isProcessing) {
+							this.updatePreparationPercentage();
+						}
+					});
 
 			},
 			changeArchiveTimeString: function(center) {
@@ -549,86 +609,85 @@
 				this.timeNow = time.format('LTS');
 				this.archive.dateString = ucFirst(time.format('dddd DD-MM-YYYY'));
 			},
-			moveTimelineTo: function (time) {
+			moveTimelineTo: function(time) {
 				this.$refs['timeline'].moveTimelineTo(time);
 			},
-			// changeVideoDateThottled: function() {},
 			changeVideoDate: function(date) {
 				var app = this;
-				
+
 				app.onSetNewTimelineCenterFlag = false;
 				app.vidError = false;
 				app.isStream = false;
 				app.isPreload = true;
-				
+
 				if (app.processingPostRequest) {
 					app.changeVideoDateThottled(date);
 				}
 
 				app.processingPostRequest = true;
 
-				app.axios.post('/videos/getByMonitorId', {monitor_id: app.monitor.mid, date: date})
-				.then(response => {
-					app.processingPostRequest = false;
+				app.axios.post('/videos/getByMonitorId', {
+						monitor_id: app.monitor.mid,
+						date: date
+					})
+					.then(response => {
+						app.processingPostRequest = false;
 
-					const videos = response.data.videos;
-					this.videos = response.data.videos;
+						const videos = response.data.videos;
+						this.videos = response.data.videos;
 
-					if (response.data.total < 1) 
-					{
-						app.vidError = true;
-						app.isPreload = false;
-					} 
-					else 
-					{
-						app.archive.data = videos;
-						app.isStream = true;
-						app.isPreload = false;
+						if (response.data.total < 1) {
+							app.vidError = true;
+							app.isPreload = false;
+							app.timelineLoader = false;
+						} else {
+							app.archive.data = videos;
+							app.isStream = false;
+							app.isPreload = false;
 
-						this.currentVideo = videos[videos.length - 1];
+							this.currentVideo = videos[videos.length - 1];
 
-						var startTime = moment(videos[videos.length - 1].time)/*.utcOffset(0, true)*/;
-						var currentTime = moment(date)/*.utcOffset(0, true)*/;
-						startTime.local();
-						currentTime.local();
+							var startTime = moment(videos[videos.length - 1].time) /*.utcOffset(0, true)*/ ;
+							var currentTime = moment(date) /*.utcOffset(0, true)*/ ;
+							startTime.local();
+							currentTime.local();
 
+							if (currentTime.diff(startTime, 'seconds') < 0) {
+								currentTime = startTime;
+							}
 
-						if (currentTime.diff(startTime, 'seconds') < 0) {
-							currentTime = startTime;
+							this.server = response.data.server;
+							var match = this.server.match(/^(?:(https|http):\/\/)?([^:\/\\]+(?::\d{1,5})?)$/);
+							var newSrc = `${window.baseUrl}/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(videos[videos.length - 1].href)}`;
+
+							if (app.videoSrc != newSrc) {
+								this.changeVideoSrc(newSrc);
+							}
+							// this.$refs.vid.load();
+							this.$refs.vid.currentTime = currentTime.diff(startTime, 'seconds');
 						}
+						this.$root.$emit('setVideos', this.videos);
+					})
+					.catch(error => {
+						app.error = true;
+						app.processingPostRequest = false;
 
-						this.server = response.data.server;
-						var match = this.server.match(/^(?:(https|http):\/\/)?([^:\/\\]+(?::\d{1,5})?)$/);
-						var newSrc = `/get_video/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(videos[videos.length - 1].href)}`;
-						//app.videoSrc = response.data.server + videos[0].href;
-						if (app.videoSrc != newSrc) {
-							this.changeVideoSrc(newSrc);
-							//app.videoSrc = newSrc;
-						}
-						this.$refs.vid.load();
-						this.$refs.vid.currentTime = currentTime.diff(startTime, 'seconds');
-					}
-				})
-				.catch(error => {
-					app.error = true;
-					app.processingPostRequest = false;
-					
-					console.error('Ошибка получение видео архива: ', error)
-				});
+						console.error('Ошибка получение видео архива: ', error)
+					});
 
 			},
 			prepareVideo(video) {
 				var match = this.server.match(/^(?:(https|http):\/\/)?([^:\/\\]+(?::\d{1,5})?)$/);
-				var src = `/get_video/prepare/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(video.href)}`;
+				var src = `${window.baseUrl}/get_video/prepare/?scheme=${encodeURIComponent(match[1])}&host=${encodeURIComponent(match[2])}&filepath=${encodeURIComponent(video.href)}`;
 
 				this.axios.get(src, {})
-				.then(response => {
-					// Не интересует. Нужно лишь отправить.
-				});
+					.then(response => {
+						// Не интересует. Нужно лишь отправить.
+					});
 			},
 			log: function(string) {
 				console.log(Date() + ': ' + string);
 			},
-		}                                          
+		}
 	}
 </script>

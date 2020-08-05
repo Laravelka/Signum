@@ -47,7 +47,7 @@
 					Пока пусто...
 				</v-alert>
 			</v-col>
-			<v-col v-if="!loading" v-for="monitor in monitors" v-bind:key="monitor.mid" cols="12" xs="12" sm="6" md="4">
+			<v-col v-if="!loading && (monitor.mid.indexOf('hls') < 0)" v-for="monitor in monitors" v-bind:key="monitor.mid" cols="12" xs="12" sm="6" md="4">
 				<v-card>
 					<v-img min-height="220" aspect-ratio="16/9" :src="`${monitor.screen}?hash=${monitor.hash}`" @click="$router.push('/monitor/' + monitor.mid)">
 						<v-row dense class="lightbox fill-height" align="end">

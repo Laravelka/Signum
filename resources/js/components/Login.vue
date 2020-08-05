@@ -1,5 +1,8 @@
 <template>
-    <v-container class="fill-height">
+
+    <v-container fill-height
+		style="height: calc(100vh - 100px);"
+	>
         <v-row align="center" justify="center">
             <v-col
                 cols="12"

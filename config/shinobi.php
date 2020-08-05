@@ -2,6 +2,6 @@
 
 return [
 	'videos' => [
-		'limit' => '0,10000'
+		'limit' => '0,5000'
 	]
 ];

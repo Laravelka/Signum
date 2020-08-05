@@ -50,7 +50,6 @@ class VideosController extends Controller
 
 			$json['server'] = $this->server;
 			$json['url'] = $url;
-			//$json['timezone'] = $timezone;
 			$json['data'] = $data->toString();
 			
 			$code = 200;
@@ -85,12 +84,7 @@ class VideosController extends Controller
 				config('shinobi.videos.limit');
 			
 			$httpResponse = $client->request('GET', $url);
-			$response = json_decode($httpResponse->getBody()->getContents(), true);
-			
-			$json = [
-				'message' => 'Вродь работает',
-				'response' => $response
-			];
+			$json = json_decode($httpResponse->getBody()->getContents(), true);
 			$code = 200;
 		}
 		else

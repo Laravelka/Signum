@@ -1,23 +1,32 @@
 import Vue from 'vue';
 import axios from 'axios';
 import Vuetify from 'vuetify';
-import VueAxios from 'vue-axios'
+import VueAxios from 'vue-axios';
 import VueRouter from 'vue-router';
-import DatetimePicker from 'vuetify-datetime-picker'
+import momentjs from 'moment-timezone';
+
+momentjs.tz.setDefault("Asia/Yekaterinburg");
+momentjs.locale('ru');
 
 import '@/css/style.css';
+
 import App from '@/js/views/App';
 import Routes from '@/js/routes.js';
 import {setCookie, getCookie} from '@/js/helpers/cookies';
 
 import timeline from '@/js/components/Timeline';
-import 'vis-timeline/dist/vis-timeline-graph2d.min.css';
+import DateTime from '@/js/components/DateTime';
+import 'vis-timeline/styles/vis-timeline-graph2d.css';
 
-Vue.use(DatetimePicker);
+Vue.prototype.$moment = momentjs;
+
 Vue.use(VueAxios, axios);
 Vue.component('timeline', timeline);
+Vue.component('v-datetime', DateTime);
 
-axios.defaults.baseURL = 'https://ex-coin.space/api';
+window.baseUrl = 'https://signum56.ru';
+
+axios.defaults.baseURL = window.baseUrl + '/api';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Authorization'] = 'Bearer ' + getCookie('default_auth_token');
 
