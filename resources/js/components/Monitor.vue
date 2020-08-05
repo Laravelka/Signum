@@ -77,7 +77,7 @@
 							playsinline
 							autoplay
 							muted
-							style="object-fit: cover!important; width: 100%; height: auto; max-height: 100%;;"
+							style="object-fit: cover!important; width: 100%; height: auto; max-height: 100%"
 							v-on:loadeddata="loadedData"
 							v-on:error="videoError"
 							v-on:ended="onVideoEnded"
