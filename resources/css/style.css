@@ -25,3 +25,19 @@ a {text-decoration: none!important;}
 	color: white !important;
 }
 
+.vis-time-axis .vis-grid.vis-minor {
+    border-color: rgba(0, 0, 0, 0.2)!important;
+}
+
+.vis-timeline {
+	border: 1px solid rgba(0, 0, 0, 0.2)!important;
+}
+
+.vis-panel.vis-center, .vis-panel.vis-left, .vis-panel.vis-right, .vis-panel.vis-top, .vis-panel.vis-bottom {
+	border: 1px rgba(0, 0, 0, 0.2)!important;
+}
+
+.vis-tem .vis-background {
+	background: rgb(63, 81, 181)!important;
+	border-radius: .50rem!important;
+}

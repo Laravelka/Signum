@@ -68,6 +68,9 @@
 								</v-col>
 							</v-row>
 						</div>
+						<div id="progress-time">
+							<div ref="progress" id="progress-time-item" @click="onClickProgress"></div>
+						</div>
 						<video
 							v-show="!vidError"
 							ref="vid"
@@ -77,7 +80,6 @@
 							playsinline
 							autoplay
 							muted
-							style="object-fit: cover!important; width: 100%; height: auto; max-height: 100%"
 							v-on:loadeddata="loadedData"
 							v-on:error="videoError"
 							v-on:ended="onVideoEnded"
@@ -87,8 +89,50 @@
 							v-on:timeupdate="onVideoTimeupdate"
 							v-on:seeked="onVideoSeeked"
 						></video>
+						<div id="videoRate">
+							<div class="text-center">
+								<v-menu open-on-hover top offset-y>
+									<template v-slot:activator="{ on, attrs }">
+										<v-btn
+											text
+											dark
+											v-bind="attrs"
+											v-on="on"
+											:disabled="isPreload || !isPlay"
+										>
+											X{{ currentRate }}
+										</v-btn>
+									</template>
+									<v-list>
+										<v-list-item @click="rateUp(32.0)">
+											<v-list-item-title>X32</v-list-item-title>
+										</v-list-item>
+										<v-list-item @click="rateUp(16.0)">
+											<v-list-item-title>X16</v-list-item-title>
+										</v-list-item>
+										<v-list-item @click="rateUp(8.0)">
+											<v-list-item-title>X8</v-list-item-title>
+										</v-list-item>
+										<v-list-item @click="rateUp(4.0)">
+											<v-list-item-title>X4</v-list-item-title>
+										</v-list-item>
+										<v-list-item @click="rateUp(2.0)">
+											<v-list-item-title>X2</v-list-item-title>
+										</v-list-item>
+										<v-list-item @click="rateUp(1.0)">
+											<v-list-item-title>X1</v-list-item-title>
+										</v-list-item>
+									</v-list>
+								</v-menu>
+							</div>
+						</div>
+						<div id="fullScreen">
+							<v-btn icon :disabled="isPreload || vidError" @click="fullScreen(true)">
+								<v-icon size="24">mdi-arrow-expand-all</v-icon>
+							</v-btn>
+						</div>
 					</div>
-					<v-card-title>
+					<v-card-title :style="{padding: '12px', 'margin-top': '-10px'}">
 						<v-row justify="space-between">
 							<v-col cols="6">
 								<v-btn
@@ -102,28 +146,34 @@
 									<v-img v-if="isStream" height="24" width="24" src="/images/live.png"></v-img>
 									<v-icon v-else>mdi-refresh</v-icon>
 								</v-btn>
+								<v-btn icon :disabled="isPreload || !isPlay" @click="rewind(10)">
+									<v-icon>mdi-rewind-10</v-icon>
+								</v-btn>
+								<v-btn icon :disabled="isPreload || !isPlay" @click="forward(10)">
+									<v-icon>mdi-fast-forward-10</v-icon>
+								</v-btn>
 							</v-col>
 							<v-col cols="6" class="d-flex justify-end">
-								<v-btn icon :disabled="isStream || isPreload || vidError || timelineDisabled" @click="downloadCurrentVideo">
-									<v-icon>mdi-cloud-download</v-icon>
-								</v-btn>
 								<v-btn icon v-if="!isPlay" :disabled="isPreload || vidError || timelineDisabled" @click="playVideo()">
 									<v-icon>mdi-play</v-icon>
 								</v-btn>
 								<v-btn icon v-else :disabled="isPreload || vidError || timelineDisabled" @click="pauseVideo()">
 									<v-icon>mdi-pause</v-icon>
 								</v-btn>
+								<a :href="monitor.server + currentVideo.href" :disabled="isStream || isPreload || vidError || timelineDisabled" download class="v-btn v-btn--flat v-btn--icon v-btn--round theme--dark v-size--default">
+									<span class="v-btn__content"><i data-v-35a3a9bf="" aria-hidden="true" class="v-icon notranslate mdi mdi-cloud-download theme--dark"></i></span>
+								</a>
 								<v-btn icon :disabled="isPreload" @click="snapshot(isStream)">
 									<v-icon>mdi-camera</v-icon>
 								</v-btn>
 								<v-datetime :disabled="isPreload || timelineDisabled" v-model="timeNowCalendar"></v-datetime>
-								<v-btn icon @click="fullScreen" :disabled="isPreload">
-									<v-icon>mdi-arrow-expand-all</v-icon>
+								<v-btn icon @click="fullScreen(false)">
+									<v-icon>{{ isFullScreen ? 'mdi-arrow-all' : 'mdi-arrow-expand-all' }}</v-icon>
 								</v-btn>
 							</v-col>
 						</v-row>
 					</v-card-title>
-					<v-card-actions class="flex-column justify-center align-items-center">
+					<v-card-actions class="flex-column justify-center align-items-center" :style="{'margin-top': (window.width < 655 ? '-30px' : '-60px')}">
 						<v-row class="d-flex justify-center">
 							<div
 								class="d-flex"
@@ -167,6 +217,36 @@
 	</v-container>
 </template>
 <style scoped>
+	#videoRate {
+		position: absolute;
+		bottom: 5px;
+		left: 5px;
+	}
+	
+	#fullScreen {
+		position: absolute;
+		bottom: 5px;
+		right: 5px;
+	}
+	
+	#progress-time {
+		background: rgba(0, 0, 0, 0.2);
+		position: absolute;
+		height: 4px;
+		width: 100%;
+		bottom: 0;
+		left: 0;
+	}
+	
+	#progress-time-item {
+		background: #3f51b5;
+		position: absolute;
+		height: 4px;
+		width: 0%;
+		bottom: 0;
+		left: 0;
+	}
+	
 	.load-timeline {
 		display: flex;
 		align-items: center;
@@ -180,10 +260,31 @@
 
 	#stream {
 		width: 100%;
-		height: 240px;
 		overflow: hidden;
+		height: 54vw;
+		min-height: 44vw;
+		position: relative;
 	}
 	
+	#stream video {
+		width: 100%;
+		display: block;
+		object-fit: cover!important;
+	}
+	
+	@media (min-width: 1280px) {
+		#stream {
+			height: 44vw!important;
+		}
+	}
+	
+	@media (max-width: 380px) {
+		#stream {
+			height: 53vw!important;
+		}
+	}
+	
+	/*
 	@media (max-width: 360px) {
 		#stream {
 			height: 200px!important;
@@ -210,7 +311,13 @@
 	
 	@media (min-width: 1280px) {
 		#stream {
-			height: 523px!important;
+			height: 615px!important;
+		}
+	}
+	
+	@media (min-width: 1660px) {
+		#stream {
+			height: 615px!important;
 		}
 	}
 	
@@ -219,6 +326,7 @@
 			height: 1000px!important;
 		}
 	}
+	*/
 	
 	.darkening {
 		background: rgba(0, 0, 0, 0.3);
@@ -228,19 +336,6 @@
 		display: block;
 		width: 100%;
 		height: 100%;
-	}
-
-	#stream {
-		position: relative;
-	}
-
-	#stream>#video {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: unset;
 	}
 
 	.priview {
@@ -287,8 +382,14 @@
 
 	export default {
 		data: () => ({
+			window: {
+				width: 0,
+				height: 0,
+			},
+			currentRate: 1,
 			server: "",
 			videos: [],
+			isFullScreen: false,
 			currentVideo: {},
 			onSetNewTimelineCenterFlag: false,
 			progressColor: 'white',
@@ -338,7 +439,10 @@
 			this.archive.dateString = ucFirst(now.format('dddd DD-MM-YYYY'));
 
 			this.mobileDetect = new mobileDetect(navigator.userAgent);
-
+	
+			window.addEventListener('resize', this.updateWidth);
+			this.updateWidth();
+			
 			this.$root.$emit('hide-object', ['bottomNavigation']);
 			this.$root.$on('setVideosLabels', (items) => {
 				app.timelineLoader = false;
@@ -417,6 +521,29 @@
 
 		},
 		methods: {
+			rateUp(rate = 2) {
+				this.$refs['vid'].playbackRate = this.currentRate = rate;
+			},
+			rewind(seconds) {
+				this.$refs['vid'].currentTime -= seconds;
+			},
+			forward(seconds) {
+				this.$refs['vid'].currentTime += seconds;
+			},
+			onClickProgress(e) {
+				let posX = e.clientX - 8;
+				let percent = (posX * 100) / 800;
+				
+				console.log(percent);
+				
+				// this.$refs.progress.style.width = percent + '%';
+				
+				// this.$refs['vid'].currentTime = (percent * Math.round(this.$refs['vid'].duration)) / 100;
+			},
+			updateWidth() {
+				this.window.width = window.innerWidth;
+				this.window.height = window.innerHeight;
+			},
 			downloadCurrentVideo() {
 				var xhr = new XMLHttpRequest();
 				xhr.open("GET", this.monitor.server + this.currentVideo.href, true);
@@ -498,8 +625,10 @@
 				this.isPlay = false;
 			},
 			onVideoTimeupdate(event) {
-				// this.isPlay = true;
-
+				const percent = 100 * Math.round(event.target.currentTime) / Math.round(event.target.duration);
+				
+				this.$refs.progress.style.width = percent + '%';
+					
 				if (!this.onSetNewTimelineCenterFlag) {
 					if (this.currentVideo && this.currentVideo.time) {
 
@@ -555,8 +684,16 @@
 				this.isPreload = true;
 				this.vidError = false;
 			},
-			fullScreen() {
-				fullScreen(this.$refs.vid);
+			fullScreen(isReal = false) {
+				if (isReal)
+				{
+					fullScreen(this.$refs.vid);
+				}
+				else
+				{
+					this.$root.$emit((this.isFullScreen ? 'show-object' : 'hide-object'), ['appBar', 'drawer']);
+					this.isFullScreen = !this.isFullScreen;
+				}
 			},
 			reloadPage() {
 				location.reload();

@@ -4,7 +4,7 @@
 			app
 			touchless
 			v-model="drawer"
-			v-if="$auth.ready() && $auth.check()"
+			v-if="$auth.ready() && $auth.check() && !hide.drawer"
 		>
 			<v-list-item>
 				<v-list-item-content>
@@ -90,6 +90,7 @@
 		data: () => ({
 			hide: {
 				appBar: false,
+				drawer: false,
 				bottomNavigation: false
 			},
 			title: 'Signum.video',
@@ -122,8 +123,6 @@
 		},
 		methods: {
 			installApp() {
-				console.log('установка PWA');
-				
 				this.deferredPrompt.prompt();
 				// Wait for the user to respond to the prompt
 				this.deferredPrompt.userChoice.then((choiceResult) => {
@@ -160,12 +159,10 @@
 				console.log('is pwa');
 				
 				window.addEventListener('beforeinstallprompt', (e) => {
-					// Prevent the mini-infobar from appearing on mobile
 					e.preventDefault();
-					// Stash the event so it can be triggered later.
 					this.deferredPrompt = e;
-					// Update UI notify the user they can install the PWA
-					console.log('Установи ебанное приложение', e);
+					
+					
 				});
 			}
 		},
@@ -175,6 +172,12 @@
 			app.$root.$on('hide-object', function(data) {
 				data.forEach((item) => {
 					app.hide[item] = true;
+				});
+			});
+			
+			app.$root.$on('show-object', function(data) {
+				data.forEach((item) => {
+					app.hide[item] = false;
 				});
 			});
 			

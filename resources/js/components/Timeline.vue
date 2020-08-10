@@ -3,6 +3,7 @@
 </template>
 <script>
 	import moment from 'moment';
+	import config from '@/js/config';
 	import download from 'downloadjs';
 	import { DataSet } from "vis-data/peer";
 	import { Timeline } from "vis-timeline/peer";
@@ -54,7 +55,7 @@
 					var start = moment(item.time);
 					var end = moment(item.end);
 					var type = 'background'
-					var style = 'background: #7495a5;';
+					var style = 'background: #3f51b5; border-radius: .50rem!important;';
 					items.push({
 						start: start,
 						end: end,
@@ -68,7 +69,7 @@
 					var start = moment(item.time);
 					var end = moment(item.end);
 					var type = 'background'
-					var style = 'background: #7495a5;';
+					var style = 'background: #3f51b5; border-radius: .50rem!important;';
 					items.push({
 						start: start,
 						end: end,
@@ -95,6 +96,8 @@
 		mounted(argument) {
 			var container = this.$refs["visualization"];
 			
+			console.log('Конфиг: ', config);
+			
 			if (this.params.downloadeditem) {
 				var items = new DataSet([this.params.downloadeditem]);
 			} else {
@@ -118,8 +121,8 @@
 				max: this.params.range.max,
 				start: start,
 				end: end,
-				zoomMin: 10000,
-				zoomMax: 216000000,
+				zoomMin: 60000,
+				zoomMax: 86400000,
 				showCurrentTime: false,
 			};
 			this.timelineinstance = new Timeline(container, items, options);
