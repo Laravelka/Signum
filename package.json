@@ -27,7 +27,7 @@
     "firebase-admin": "^8.13.0",
     "keycharm": "^0.3.1",
     "mobile-detect": "^1.4.4",
-    "moment": "^2.27.0",
+    "moment": "^2.29.2",
     "moment-timezone": "^0.5.31",
     "propagating-hammerjs": "^1.4.7",
     "uuid": "^7.0.3",
